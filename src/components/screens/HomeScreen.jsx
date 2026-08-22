@@ -1,0 +1,261 @@
+import { useMemo } from 'react'
+import { Flame, Zap, Plus, Check } from 'lucide-react'
+import { todayStr } from '../../utils/gamification'
+import { getDailyChallenge, getTimePulse, getWiseGreeting } from '../../utils/challenges'
+import { getSmartInsights } from '../../utils/analytics'
+
+// ─── Direction scores from today's entry ─────────────────────────
+
+const DIRECTIONS = [
+  { key: 'god',    label: 'God',    emoji: '🕊️', color: 'bg-yellow-400' },
+  { key: 'health', label: 'Health', emoji: '💪',  color: 'bg-sky-400'    },
+  { key: 'wealth', label: 'Wealth', emoji: '💰',  color: 'bg-emerald-400'},
+  { key: 'family', label: 'Family', emoji: '❤️',  color: 'bg-pink-400'   },
+  { key: 'pro',    label: 'Work',   emoji: '💼',  color: 'bg-indigo-400' },
+]
+
+function calcScores(e) {
+  if (!e) return { god: 0, health: 0, wealth: 0, family: 0, pro: 0 }
+  return {
+    god:    Math.min(100, (e.prayer_done?40:0) + Math.min(40,(e.god_minutes||0)/30*40) + ((e.meditation_minutes||0)>0?20:0)),
+    health: Math.min(100, ((e.sleep_hours>=7&&e.sleep_hours<=9)?25:0) + ((e.water_liters>=2)?25:0) + ((e.workout_minutes>0)?25:0) + ((e.steps>=8000)?25:0)),
+    wealth: Math.min(100, (e.paid_yourself_first?40:0) + (e.avoided_impulse?30:0) + (e.financial_learning?30:0)),
+    family: Math.min(100, Math.min(100,(e.family_time||0)/60*100)),
+    pro:    Math.min(100, ((e.deep_work_hours||0)/8*50) + Math.min(25,(e.learning_minutes||0)/60*25) + Math.min(25,(e.tasks_completed||0)/10*25)),
+  }
+}
+
+// ─── Sub-components ───────────────────────────────────────────────
+
+function StatPill({ emoji, label, value, color = 'text-white' }) {
+  return (
+    <div className="bg-elevated rounded-2xl p-3 flex flex-col gap-1">
+      <span className="text-lg">{emoji}</span>
+      <span className={`text-xl font-bold ${color}`}>{value ?? '—'}</span>
+      <span className="text-[11px] text-gray-400">{label}</span>
+    </div>
+  )
+}
+
+function StreakPill({ emoji, label, count }) {
+  return (
+    <div className={`flex items-center gap-2 bg-elevated rounded-xl px-3 py-2 ${count > 0 ? '' : 'opacity-40'}`}>
+      <span className="text-base">{emoji}</span>
+      <div>
+        <div className="text-sm font-bold text-white">{count}d</div>
+        <div className="text-[10px] text-gray-400">{label}</div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Time Pulse ───────────────────────────────────────────────────
+
+function TimePulse() {
+  const t = useMemo(() => getTimePulse(), [])
+  return (
+    <div className="card space-y-2.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">⏳ Time Pulse</span>
+        <span className="text-xs text-gray-500">Day {t.dayOfYear} of year</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="bg-elevated rounded-xl p-2.5">
+          <p className="text-gray-400">Week of year</p>
+          <p className="text-white font-bold text-lg">{t.weekOfYear}<span className="text-gray-500 font-normal text-xs">/52</span></p>
+        </div>
+        <div className="bg-elevated rounded-xl p-2.5">
+          <p className="text-gray-400">{t.monthName} ends in</p>
+          <p className={`font-bold text-lg ${t.daysLeftInMonth <= 5 ? 'text-rose' : 'text-white'}`}>{t.daysLeftInMonth}<span className="text-gray-500 font-normal text-xs"> days</span></p>
+        </div>
+        <div className="bg-elevated rounded-xl p-2.5">
+          <p className="text-gray-400">Weekends left</p>
+          <p className="text-gold font-bold text-lg">{t.weekendsLeft}<span className="text-gray-500 font-normal text-xs"> this year</span></p>
+        </div>
+        <div className="bg-elevated rounded-xl p-2.5">
+          <p className="text-gray-400">Year used</p>
+          <p className={`font-bold text-lg ${t.yearPct > 75 ? 'text-rose' : t.yearPct > 50 ? 'text-gold' : 'text-emerald'}`}>{t.yearPct}%</p>
+        </div>
+      </div>
+      <p className="text-[11px] text-gray-500 italic text-center">
+        {t.daysLeftInYear} days remain in {new Date().getFullYear()}. Every one of them is a choice.
+      </p>
+    </div>
+  )
+}
+
+// ─── Daily Challenge ──────────────────────────────────────────────
+
+const CAT_COLORS = {
+  god:    'text-yellow-300 bg-yellow-500/10 border-yellow-500/20',
+  health: 'text-sky-300 bg-sky-500/10 border-sky-500/20',
+  wealth: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+  family: 'text-pink-300 bg-pink-500/10 border-pink-500/20',
+  pro:    'text-indigo-300 bg-indigo-500/10 border-indigo-500/20',
+  people: 'text-purple-300 bg-purple-500/10 border-purple-500/20',
+  mind:   'text-accent-light bg-accent/10 border-accent/20',
+}
+
+function DailyChallenge({ todayEntry, onSave }) {
+  const challenge = useMemo(() => getDailyChallenge(), [])
+  const done = !!todayEntry?.challenge_done
+  const catColor = CAT_COLORS[challenge.cat] || CAT_COLORS.mind
+
+  async function toggle() {
+    if (!onSave) return
+    await onSave({ ...(todayEntry || {}), date: todayStr(), challenge_done: !done })
+  }
+
+  return (
+    <div className={`card border space-y-3 ${done ? 'border-emerald/30 bg-emerald/5' : 'border-accent/20'}`}>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-accent uppercase tracking-widest">⭐ Today's Challenge</span>
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${catColor}`}>
+          {challenge.emoji} {challenge.cat.charAt(0).toUpperCase() + challenge.cat.slice(1)}
+        </span>
+      </div>
+
+      <p className="text-sm font-semibold text-white leading-relaxed">"{challenge.text}"</p>
+
+      <p className="text-xs text-gray-400 italic border-l-2 border-accent/30 pl-2 leading-relaxed">
+        {challenge.why}
+      </p>
+
+      <button
+        onClick={toggle}
+        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95 ${
+          done
+            ? 'bg-emerald/20 border border-emerald text-emerald'
+            : 'bg-accent/20 border border-accent/40 text-accent hover:bg-accent/30'
+        }`}
+      >
+        {done ? (
+          <><Check size={15} /> Done — you're building who you want to be.</>
+        ) : (
+          '↑ Mark as Done'
+        )}
+      </button>
+    </div>
+  )
+}
+
+// ─── Screen ───────────────────────────────────────────────────────
+
+export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, logStreak, onNavigate, profile, onSave, entries }) {
+  const greeting = useMemo(() => getWiseGreeting(profile?.name), [profile])
+  const scores = calcScores(todayEntry)
+  const topStreaks = streaks.slice(0, 4)
+  const insights = useMemo(() => getSmartInsights(entries || [], streaks), [entries, streaks])
+
+  return (
+    <div className="screen space-y-5 animate-fade-in">
+
+      {/* Wise Greeting */}
+      <div>
+        <p className="text-xs text-gray-500 mb-1">{new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' })}</p>
+        <p className="text-base font-semibold text-gray-200 leading-snug">{greeting}</p>
+      </div>
+
+      {/* Level + XP */}
+      <div className="card-elevated glow-accent space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-gray-400 uppercase tracking-widest">Level {levelInfo.level}</div>
+            <div className="text-xl font-bold gradient-text-accent">{levelInfo.emoji} {levelInfo.title}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-gray-400">Today</div>
+            <div className="flex items-center gap-1">
+              <Zap size={14} className="text-gold" />
+              <span className="text-gold font-bold text-lg">+{todayXP} XP</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-xs text-gray-400 mb-1.5">
+            <span>{levelInfo.xpInLevel} / {levelInfo.rangeSize || '∞'} XP</span>
+            <span>{Math.round(levelInfo.progress * 100)}% to next</span>
+          </div>
+          <div className="h-2.5 bg-border rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-accent to-accent-light rounded-full xp-bar-fill"
+              style={{ width: `${Math.round(levelInfo.progress * 100)}%` }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Time Pulse */}
+      <TimePulse />
+
+      {/* Smart Insights — brain-driven nudges */}
+      {insights.length > 0 && (
+        <div>
+          <p className="section-title">🧠 Brain Pulse</p>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {insights.map((ins, i) => (
+              <div key={i} className={`flex-shrink-0 w-[280px] px-3.5 py-3 rounded-2xl border text-xs leading-relaxed ${
+                ins.type === 'warn' ? 'bg-rose/5 border-rose/20 text-gray-200' :
+                ins.type === 'pos'  ? 'bg-emerald/5 border-emerald/20 text-gray-200' :
+                'bg-accent/5 border-accent/20 text-gray-200'
+              }`}>
+                <span className="mr-1">{ins.emoji}</span>{ins.text}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Daily Challenge */}
+      <DailyChallenge todayEntry={todayEntry} onSave={onSave} />
+
+      {/* 5-Direction Balance */}
+      <div>
+        <p className="section-title">Today's balance</p>
+        <div className="card space-y-2.5">
+          {DIRECTIONS.map(d => (
+            <div key={d.key} className="flex items-center gap-3">
+              <span className="text-base w-6">{d.emoji}</span>
+              <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
+                <div className={`h-full ${d.color} rounded-full transition-all duration-700`}
+                  style={{ width: `${scores[d.key]}%` }} />
+              </div>
+              <span className="text-xs font-semibold text-gray-400 w-8 text-right">{Math.round(scores[d.key])}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Today's Stats */}
+      <div>
+        <p className="section-title">Today's metrics</p>
+        {todayEntry ? (
+          <div className="grid grid-cols-3 gap-2">
+            <StatPill emoji="🔥" label="Deep Work" value={todayEntry.deep_work_hours ? `${todayEntry.deep_work_hours}h` : null} color="text-orange-400" />
+            <StatPill emoji="😴" label="Sleep" value={todayEntry.sleep_hours ? `${todayEntry.sleep_hours}h` : null} color="text-sky" />
+            <StatPill emoji="⚡" label="Energy" value={todayEntry.energy_score ? `${todayEntry.energy_score}/10` : null} color="text-emerald" />
+            <StatPill emoji="📚" label="Learning" value={todayEntry.learning_minutes ? `${todayEntry.learning_minutes}m` : null} color="text-accent-light" />
+            <StatPill emoji="💧" label="Water" value={todayEntry.water_liters ? `${todayEntry.water_liters}L` : null} color="text-sky" />
+            <StatPill emoji="❤️" label="Family" value={todayEntry.family_time ? `${todayEntry.family_time}m` : null} color="text-pink-400" />
+          </div>
+        ) : (
+          <div className="card border border-dashed border-border flex flex-col items-center gap-3 py-8">
+            <p className="text-gray-400 text-sm text-center">Nothing logged yet today.</p>
+            <button onClick={() => onNavigate('log')} className="btn-primary flex items-center gap-2">
+              <Plus size={16} /> Log Today
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Streaks */}
+      <div>
+        <p className="section-title">Active streaks</p>
+        <div className="grid grid-cols-2 gap-2">
+          {topStreaks.map(s => (
+            <StreakPill key={s.key} emoji={s.emoji} label={s.label} count={s.current} />
+          ))}
+        </div>
+      </div>
+
+    </div>
+  )
+}
