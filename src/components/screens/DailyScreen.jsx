@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { PenLine, Star } from 'lucide-react'
-import LogScreen    from './LogScreen'
-import RitualScreen from './RitualScreen'
+import { PenLine, Star, BookOpen } from 'lucide-react'
+import LogScreen        from './LogScreen'
+import RitualScreen     from './RitualScreen'
+import ExperienceScreen from './ExperienceScreen'
 
 const TABS = [
-  { id: 'log',    icon: PenLine, label: 'Log',    gradient: 'linear-gradient(135deg,#0d9488,#059669)' },
-  { id: 'ritual', icon: Star,    label: 'Ritual',  gradient: 'linear-gradient(135deg,#7c3aed,#6d28d9)' },
+  { id: 'log',     icon: PenLine,  label: 'Log',     gradient: 'linear-gradient(135deg,#0d9488,#059669)' },
+  { id: 'ritual',  icon: Star,     label: 'Ritual',  gradient: 'linear-gradient(135deg,#7c3aed,#6d28d9)' },
+  { id: 'journal', icon: BookOpen, label: 'Journal', gradient: 'linear-gradient(135deg,#e11d48,#be123c)' },
 ]
 
-export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onToggleTask, onDeleteTask }) {
+export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onToggleTask, onDeleteTask, experiences, onAddExperience, onDeleteExperience }) {
   const [mode, setMode] = useState('log')
 
   return (
@@ -46,7 +48,7 @@ export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onTo
         </div>
       </div>
 
-      {mode === 'log' ? (
+      {mode === 'log' && (
         <LogScreen
           todayEntry={todayEntry}
           onSave={onSave}
@@ -56,8 +58,17 @@ export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onTo
           onDeleteTask={onDeleteTask}
           embedded
         />
-      ) : (
+      )}
+      {mode === 'ritual' && (
         <RitualScreen todayEntry={todayEntry} onSave={onSave} embedded />
+      )}
+      {mode === 'journal' && (
+        <ExperienceScreen
+          experiences={experiences}
+          onAdd={onAddExperience}
+          onDelete={onDeleteExperience}
+          embedded
+        />
       )}
     </div>
   )

@@ -334,7 +334,7 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
   return (
     <div
       className={`${embedded ? 'px-4 space-y-4 animate-fade-in' : 'screen space-y-4 animate-fade-in'}`}
-      style={embedded ? { paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))' } : {}}
+      style={embedded ? { paddingTop: '1.25rem', paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))' } : {}}
     >
 
       {/* Header */}

@@ -1,14 +1,12 @@
 import { useState, lazy, Suspense } from 'react'
-import { BookOpen, BarChart3, Trophy } from 'lucide-react'
-import JournalScreen  from './JournalScreen'
+import { BarChart3, Trophy } from 'lucide-react'
 import ProgressScreen from './ProgressScreen'
 
 const ChartsScreen = lazy(() => import('./ChartsScreen'))
 
 const TABS = [
-  { id: 'journal',  icon: BookOpen,  label: 'Journal',  gradient: 'linear-gradient(135deg,#e11d48,#be123c)' },
-  { id: 'charts',   icon: BarChart3, label: 'Charts',   gradient: 'linear-gradient(135deg,#0284c7,#0369a1)' },
   { id: 'progress', icon: Trophy,    label: 'Progress', gradient: 'linear-gradient(135deg,#d97706,#b45309)' },
+  { id: 'charts',   icon: BarChart3, label: 'Charts',   gradient: 'linear-gradient(135deg,#0284c7,#0369a1)' },
 ]
 
 const Loader = () => (
@@ -16,10 +14,10 @@ const Loader = () => (
 )
 
 export default function LifeScreen({
-  experiences, entries, onAdd, onDelete,
+  entries,
   levelInfo, streaks, earnedBadges, totalXP,
 }) {
-  const [mode, setMode] = useState('journal')
+  const [mode, setMode] = useState('progress')
 
   return (
     <div className="min-h-screen bg-base">
@@ -56,14 +54,6 @@ export default function LifeScreen({
         </div>
       </div>
 
-      {mode === 'journal' && (
-        <JournalScreen experiences={experiences} entries={entries} onAdd={onAdd} onDelete={onDelete} embedded />
-      )}
-      {mode === 'charts' && (
-        <Suspense fallback={<Loader />}>
-          <ChartsScreen entries={entries} embedded />
-        </Suspense>
-      )}
       {mode === 'progress' && (
         <ProgressScreen
           levelInfo={levelInfo}
@@ -73,6 +63,11 @@ export default function LifeScreen({
           entries={entries}
           embedded
         />
+      )}
+      {mode === 'charts' && (
+        <Suspense fallback={<Loader />}>
+          <ChartsScreen entries={entries} embedded />
+        </Suspense>
       )}
     </div>
   )

@@ -25,7 +25,7 @@ const TABS = [
   {
     id: 'life',
     icon: Compass,
-    label: 'Life',
+    label: 'Stats',
     from: '#e11d48', to: '#be123c',
     glow: 'rgba(225,29,72,0.55)',
   },

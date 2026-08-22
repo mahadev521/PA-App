@@ -51,15 +51,15 @@ export default function App() {
             onAddTask={app.addTask}
             onToggleTask={app.toggleTask}
             onDeleteTask={app.removeTask}
+            experiences={app.experiences}
+            onAddExperience={app.addExperience}
+            onDeleteExperience={app.removeExperience}
           />
         )
       case 'life':
         return (
           <LifeScreen
-            experiences={app.experiences}
             entries={app.entries}
-            onAdd={app.addExperience}
-            onDelete={app.removeExperience}
             levelInfo={app.levelInfo}
             streaks={app.streaks}
             earnedBadges={app.earnedBadges}

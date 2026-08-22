@@ -201,7 +201,10 @@ export default function ExperienceScreen({ experiences, onAdd, onDelete, embedde
   }, [experiences, catFilter, search])
 
   return (
-    <div className={embedded ? 'px-4 pb-24 space-y-4 animate-fade-in' : 'screen space-y-4 animate-fade-in'}>
+    <div
+      className={embedded ? 'px-4 pb-24 space-y-4 animate-fade-in' : 'screen space-y-4 animate-fade-in'}
+      style={embedded ? { paddingTop: '1.25rem', paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))' } : {}}
+    >
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">Experience Log</h1>
