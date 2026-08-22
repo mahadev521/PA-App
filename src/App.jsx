@@ -5,6 +5,8 @@ import LogScreen from './components/screens/LogScreen'
 import RitualScreen from './components/screens/RitualScreen'
 import JournalScreen from './components/screens/JournalScreen'
 import SettingsScreen from './components/screens/SettingsScreen'
+import ProgressScreen from './components/screens/ProgressScreen'
+import OnboardingScreen from './components/screens/OnboardingScreen'
 import { useApp } from './hooks/useApp'
 
 const ChartsScreen = lazy(() => import('./components/screens/ChartsScreen'))
@@ -24,6 +26,11 @@ export default function App() {
         <p className="text-gray-400 text-sm">Loading LifeOS…</p>
       </div>
     )
+  }
+
+  // Show onboarding on first launch (name is default 'You')
+  if (!app.loading && (!app.profile?.name || app.profile.name === 'You')) {
+    return <OnboardingScreen onComplete={name => app.updateProfile({ name })} />
   }
 
   function renderScreen() {
@@ -68,6 +75,24 @@ export default function App() {
             entries={app.entries}
             onAdd={app.addExperience}
             onDelete={app.removeExperience}
+          />
+        )
+      case 'progress':
+        return (
+          <ProgressScreen
+            levelInfo={app.levelInfo}
+            streaks={app.streaks}
+            earnedBadges={app.earnedBadges}
+            totalXP={app.totalXP}
+            entries={app.entries}
+          />
+        )
+      case 'settings':
+        return (
+          <SettingsScreen
+            profile={app.profile}
+            onUpdateProfile={app.updateProfile}
+            onReload={app.reload}
           />
         )
       default:

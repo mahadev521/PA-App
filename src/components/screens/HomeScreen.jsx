@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { Flame, Zap, Plus, Check } from 'lucide-react'
+import { Zap, Plus, Check, Settings } from 'lucide-react'
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts'
 import { todayStr } from '../../utils/gamification'
 import { getDailyChallenge, getTimePulse, getWiseGreeting } from '../../utils/challenges'
 import { getSmartInsights } from '../../utils/analytics'
@@ -25,7 +26,60 @@ function calcScores(e) {
   }
 }
 
-// ─── Sub-components ───────────────────────────────────────────────
+// ─── Week tracker: Mon–Sun dots ──────────────────────────────────
+
+function getWeekDates() {
+  const today = new Date()
+  const dow = today.getDay()
+  const monday = new Date(today)
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
+  const labels = ['M','T','W','T','F','S','S']
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return {
+      date: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,
+      label: labels[i],
+      isWeekend: i >= 5,
+    }
+  })
+}
+
+function WeekTracker({ entries }) {
+  const today = todayStr()
+  const byDate = Object.fromEntries(entries.map(e => [e.date, e]))
+  const days = useMemo(() => getWeekDates(), [])
+
+  return (
+    <div className="card">
+      <p className="section-title mb-2">This week</p>
+      <div className="flex justify-between">
+        {days.map(({ date, label, isWeekend }) => {
+          const entry = byDate[date]
+          const isToday = date === today
+          const isFuture = date > today
+          const logged = !!entry
+
+          let bg, border, textCol
+          if (isToday)       { bg = 'rgba(124,58,237,0.25)'; border = '1.5px solid rgba(167,139,250,0.6)'; textCol = '#a78bfa' }
+          else if (logged)   { bg = 'rgba(16,185,129,0.18)'; border = '1px solid rgba(16,185,129,0.35)';  textCol = '#10b981' }
+          else if (isFuture) { bg = 'rgba(255,255,255,0.04)'; border = '1px solid rgba(255,255,255,0.06)'; textCol = 'rgba(240,244,255,0.2)' }
+          else               { bg = 'rgba(244,63,94,0.12)'; border = '1px solid rgba(244,63,94,0.20)';   textCol = 'rgba(244,63,94,0.6)' }
+
+          return (
+            <div key={date} className="flex flex-col items-center gap-1.5">
+              <span className="text-[10px] font-medium" style={{ color: isWeekend ? 'rgba(167,139,250,0.5)' : 'rgba(240,244,255,0.35)' }}>{label}</span>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all" style={{ background: bg, border }}>
+                {logged && !isFuture ? <Check size={13} style={{ color: textCol }} strokeWidth={2.5} /> : null}
+                {isToday && !logged ? <div className="w-2 h-2 rounded-full" style={{ background: '#a78bfa' }} /> : null}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 function StatPill({ emoji, label, value, color = 'text-white' }) {
   return (
@@ -147,24 +201,38 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
   const topStreaks = streaks.slice(0, 4)
   const insights = useMemo(() => getSmartInsights(entries || [], streaks), [entries, streaks])
 
+  const radarData = DIRECTIONS.map(d => ({ direction: d.label, score: scores[d.key], fullMark: 100 }))
+  const firstName = profile?.name?.split(' ')[0] || ''
+
   return (
     <div className="screen space-y-5 animate-fade-in">
 
-      {/* Wise Greeting */}
-      <div>
-        <p className="text-xs text-gray-500 mb-1">{new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' })}</p>
-        <p className="text-base font-semibold text-gray-200 leading-snug">{greeting}</p>
+      {/* Header: greeting + settings */}
+      <div className="flex items-start justify-between">
+        <div className="flex-1 pr-3">
+          <p className="text-xs mb-0.5" style={{ color: 'rgba(240,244,255,0.38)' }}>
+            {new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}
+          </p>
+          <p className="text-base font-semibold text-white leading-snug">{greeting}</p>
+        </div>
+        <button onClick={() => onNavigate('settings')} className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)' }}>
+          <Settings size={16} style={{ color: 'rgba(240,244,255,0.45)' }} />
+        </button>
       </div>
 
-      {/* Level + XP */}
-      <div className="card-elevated glow-accent space-y-3">
+      {/* Level + XP — tappable → Progress */}
+      <button className="card-elevated glow-accent space-y-3 w-full text-left active:scale-[0.98] transition-transform"
+        onClick={() => onNavigate('progress')}>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-xs text-gray-400 uppercase tracking-widest">Level {levelInfo.level}</div>
+            <div className="text-xs uppercase tracking-widest" style={{ color: 'rgba(240,244,255,0.45)' }}>
+              Level {levelInfo.level} · Tap for details
+            </div>
             <div className="text-xl font-bold gradient-text-accent">{levelInfo.emoji} {levelInfo.title}</div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-gray-400">Today</div>
+            <div className="text-xs" style={{ color: 'rgba(240,244,255,0.40)' }}>Today</div>
             <div className="flex items-center gap-1">
               <Zap size={14} className="text-gold" />
               <span className="text-gold font-bold text-lg">+{todayXP} XP</span>
@@ -172,21 +240,23 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
           </div>
         </div>
         <div>
-          <div className="flex justify-between text-xs text-gray-400 mb-1.5">
+          <div className="flex justify-between text-xs mb-1.5" style={{ color: 'rgba(240,244,255,0.40)' }}>
             <span>{levelInfo.xpInLevel} / {levelInfo.rangeSize || '∞'} XP</span>
             <span>{Math.round(levelInfo.progress * 100)}% to next</span>
           </div>
-          <div className="h-2.5 bg-border rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-accent to-accent-light rounded-full xp-bar-fill"
-              style={{ width: `${Math.round(levelInfo.progress * 100)}%` }} />
+          <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <div className="h-full rounded-full xp-bar-fill" style={{ width: `${Math.round(levelInfo.progress * 100)}%` }} />
           </div>
         </div>
-      </div>
+      </button>
+
+      {/* Week Tracker */}
+      <WeekTracker entries={entries || []} />
 
       {/* Time Pulse */}
       <TimePulse />
 
-      {/* Smart Insights — brain-driven nudges */}
+      {/* Smart Insights */}
       {insights.length > 0 && (
         <div>
           <p className="section-title">🧠 Brain Pulse</p>
@@ -207,20 +277,20 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
       {/* Daily Challenge */}
       <DailyChallenge todayEntry={todayEntry} onSave={onSave} />
 
-      {/* 5-Direction Balance */}
+      {/* Life Balance Radar */}
       <div>
-        <p className="section-title">Today's balance</p>
-        <div className="card space-y-2.5">
-          {DIRECTIONS.map(d => (
-            <div key={d.key} className="flex items-center gap-3">
-              <span className="text-base w-6">{d.emoji}</span>
-              <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
-                <div className={`h-full ${d.color} rounded-full transition-all duration-700`}
-                  style={{ width: `${scores[d.key]}%` }} />
-              </div>
-              <span className="text-xs font-semibold text-gray-400 w-8 text-right">{Math.round(scores[d.key])}%</span>
-            </div>
-          ))}
+        <p className="section-title">Life Balance</p>
+        <div className="card" style={{ height: 220 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
+              <PolarGrid stroke="rgba(255,255,255,0.07)" />
+              <PolarAngleAxis dataKey="direction"
+                tick={{ fill: 'rgba(240,244,255,0.50)', fontSize: 11, fontWeight: 600 }} />
+              <Radar dataKey="score" fill="#7c3aed" fillOpacity={0.22}
+                stroke="#a78bfa" strokeWidth={2}
+                dot={{ fill: '#a78bfa', r: 3 }} />
+            </RadarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -237,8 +307,9 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
             <StatPill emoji="❤️" label="Family" value={todayEntry.family_time ? `${todayEntry.family_time}m` : null} color="text-pink-400" />
           </div>
         ) : (
-          <div className="card border border-dashed border-border flex flex-col items-center gap-3 py-8">
-            <p className="text-gray-400 text-sm text-center">Nothing logged yet today.</p>
+          <div className="card border border-dashed flex flex-col items-center gap-3 py-8"
+            style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            <p className="text-sm text-center" style={{ color: 'rgba(240,244,255,0.45)' }}>Nothing logged yet today.</p>
             <button onClick={() => onNavigate('log')} className="btn-primary flex items-center gap-2">
               <Plus size={16} /> Log Today
             </button>
