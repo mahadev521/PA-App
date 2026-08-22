@@ -1,11 +1,12 @@
-import { Home, PenLine, BarChart3, BookOpen, Star } from 'lucide-react'
+import { Home, PenLine, BarChart3, BookOpen, Star, Wrench } from 'lucide-react'
 
 const TABS = [
-  { id: 'home',    icon: Home,      label: 'Home'    },
-  { id: 'log',     icon: PenLine,   label: 'Log'     },
-  { id: 'ritual',  icon: Star,      label: 'Ritual'  },
-  { id: 'charts',  icon: BarChart3, label: 'Charts'  },
-  { id: 'journal', icon: BookOpen,  label: 'Journal' },
+  { id: 'home',      icon: Home,      label: 'Home'    },
+  { id: 'log',       icon: PenLine,   label: 'Log'     },
+  { id: 'ritual',   icon: Star,      label: 'Ritual'  },
+  { id: 'charts',   icon: BarChart3, label: 'Charts'  },
+  { id: 'journal',  icon: BookOpen,  label: 'Journal' },
+  { id: 'utilities',icon: Wrench,    label: 'Utils'   },
 ]
 
 export default function BottomNav({ active, onChange }) {
@@ -31,7 +32,7 @@ export default function BottomNav({ active, onChange }) {
             <button
               key={id}
               onClick={() => onChange(id)}
-              className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all"
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-2xl transition-all"
               style={isActive ? {
                 background: 'rgba(124, 58, 237, 0.18)',
               } : {}}

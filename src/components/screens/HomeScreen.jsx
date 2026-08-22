@@ -207,6 +207,30 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
   return (
     <div className="screen space-y-5 animate-fade-in">
 
+      {/* Personal creed — always first, always visible */}
+      <div
+        className="rounded-3xl px-5 py-5 space-y-3"
+        style={{
+          background: 'linear-gradient(135deg, rgba(124,58,237,0.22) 0%, rgba(9,11,26,0.6) 100%)',
+          border: '1px solid rgba(167,139,250,0.25)',
+          boxShadow: '0 0 40px rgba(124,58,237,0.12)',
+        }}
+      >
+        <p
+          className="text-base font-bold leading-snug"
+          style={{ color: '#e2d9ff', letterSpacing: '-0.01em' }}
+        >
+          "If you have something left for you to do, you have no right of thinking about anything else."
+        </p>
+        <div className="h-px" style={{ background: 'rgba(167,139,250,0.2)' }} />
+        <p
+          className="text-sm font-semibold"
+          style={{ color: 'rgba(167,139,250,0.85)' }}
+        >
+          → What do you have to do next?
+        </p>
+      </div>
+
       {/* Header: greeting + settings */}
       <div className="flex items-start justify-between">
         <div className="flex-1 pr-3">

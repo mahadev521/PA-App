@@ -371,7 +371,10 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
 
       {/* Big Rock */}
       <div className="card">
-        <label className="text-sm font-semibold text-white block mb-2">🎯 Today's ONE Big Rock</label>
+        <label className="text-sm font-semibold text-white block mb-1">🎯 Today's ONE Big Rock</label>
+        <p className="text-[11px] italic mb-2" style={{ color: 'rgba(167,139,250,0.7)' }}>
+          "If you have something left to do, you have no right of thinking about anything else."
+        </p>
         <input type="text" placeholder="The hardest, most impactful thing you must do today..."
           value={form.big_rock || ''}
           onChange={e => set('big_rock', e.target.value)}

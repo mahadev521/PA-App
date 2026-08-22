@@ -1,11 +1,15 @@
 import { openDB } from 'idb'
 
 const DB_NAME = 'lifeos-pa'
-const DB_VERSION = 3
+const DB_VERSION = 5
 const STORE = 'entries'
 const PROFILE_STORE = 'profile'
 const EXP_STORE = 'experiences'
 const TASKS_STORE = 'tasks'
+const GO_TASKS_STORE = 'go_tasks'
+const BACKLOG_STORE = 'backlog'
+const ERRAND_STORE = 'errand_runs'
+const UTILITY_STORE = 'utility_items'
 
 async function getDB() {
   return openDB(DB_NAME, DB_VERSION, {
@@ -24,6 +28,19 @@ async function getDB() {
       }
       if (!db.objectStoreNames.contains(TASKS_STORE)) {
         db.createObjectStore(TASKS_STORE, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(GO_TASKS_STORE)) {
+        db.createObjectStore(GO_TASKS_STORE, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(BACKLOG_STORE)) {
+        db.createObjectStore(BACKLOG_STORE, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(ERRAND_STORE)) {
+        db.createObjectStore(ERRAND_STORE, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(UTILITY_STORE)) {
+        const us = db.createObjectStore(UTILITY_STORE, { keyPath: 'id' })
+        us.createIndex('type', 'type')
       }
     },
   })
@@ -125,4 +142,68 @@ export async function saveTask(task) {
 export async function deleteTask(id) {
   const db = await getDB()
   return db.delete(TASKS_STORE, id)
+}
+
+export async function getAllGoTasks() {
+  const db = await getDB()
+  return db.getAll(GO_TASKS_STORE)
+}
+
+export async function saveGoTask(task) {
+  const db = await getDB()
+  const now = Date.now()
+  return db.put(GO_TASKS_STORE, { ...task, id: task.id || `gt_${now}`, created_at: task.created_at || now, order: task.order ?? task.created_at ?? now })
+}
+
+export async function deleteGoTask(id) {
+  const db = await getDB()
+  return db.delete(GO_TASKS_STORE, id)
+}
+
+export async function getAllBacklog() {
+  const db = await getDB()
+  return db.getAll(BACKLOG_STORE)
+}
+
+export async function saveBacklogItem(item) {
+  const db = await getDB()
+  const now = Date.now()
+  return db.put(BACKLOG_STORE, { ...item, id: item.id || `bl_${now}`, created_at: item.created_at || now })
+}
+
+export async function deleteBacklogItem(id) {
+  const db = await getDB()
+  return db.delete(BACKLOG_STORE, id)
+}
+
+export async function getAllErrandRuns() {
+  const db = await getDB()
+  return db.getAll(ERRAND_STORE)
+}
+
+export async function saveErrandRun(run) {
+  const db = await getDB()
+  const now = Date.now()
+  return db.put(ERRAND_STORE, { ...run, id: run.id || `er_${now}`, created_at: run.created_at || now })
+}
+
+export async function deleteErrandRun(id) {
+  const db = await getDB()
+  return db.delete(ERRAND_STORE, id)
+}
+
+export async function getAllUtilityItems() {
+  const db = await getDB()
+  return db.getAll(UTILITY_STORE)
+}
+
+export async function saveUtilityItem(item) {
+  const db = await getDB()
+  const now = Date.now()
+  return db.put(UTILITY_STORE, { ...item, id: item.id || `ui_${now}`, created_at: item.created_at || now })
+}
+
+export async function deleteUtilityItem(id) {
+  const db = await getDB()
+  return db.delete(UTILITY_STORE, id)
 }

@@ -7,6 +7,7 @@ import JournalScreen from './components/screens/JournalScreen'
 import SettingsScreen from './components/screens/SettingsScreen'
 import ProgressScreen from './components/screens/ProgressScreen'
 import OnboardingScreen from './components/screens/OnboardingScreen'
+import UtilitiesScreen from './components/screens/UtilitiesScreen'
 import { useApp } from './hooks/useApp'
 
 const ChartsScreen = lazy(() => import('./components/screens/ChartsScreen'))
@@ -93,6 +94,22 @@ export default function App() {
             profile={app.profile}
             onUpdateProfile={app.updateProfile}
             onReload={app.reload}
+          />
+        )
+      case 'utilities':
+        return (
+          <UtilitiesScreen
+            errandRuns={app.errandRuns}
+            onSaveErrand={app.upsertErrandRun}
+            onDeleteErrand={app.removeErrandRun}
+            backlog={app.backlog}
+            onAddBacklog={app.addBacklogItem}
+            onDeleteBacklog={app.removeBacklogItem}
+            onUpdateBacklogStatus={app.updateBacklogStatus}
+            utilityItems={app.utilityItems}
+            onAddUtilityItem={app.addUtilityItem}
+            onToggleUtilityItem={app.toggleUtilityItem}
+            onDeleteUtilityItem={app.removeUtilityItem}
           />
         )
       default:

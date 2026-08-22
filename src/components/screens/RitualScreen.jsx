@@ -248,7 +248,6 @@ export default function RitualScreen({ todayEntry, onSave }) {
         items={MORNING_ITEMS}
         rituals={rituals}
         onToggle={toggle}
-        defaultOpen={true}
         quote='"Win the morning, win the day." — Tim Ferriss'
         completionMsg="🔥 Morning ritual complete! You won the morning."
       />
