@@ -11,26 +11,43 @@ const TABS = [
 export default function BottomNav({ active, onChange }) {
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-surface/90 backdrop-blur-xl border-t border-border z-50"
-      style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 px-3"
+      style={{ paddingBottom: 'calc(0.6rem + env(safe-area-inset-bottom, 0px))' }}
     >
-      <div className="flex items-center justify-around px-2 pt-2 pb-1">
+      {/* Floating glass pill — iOS-style */}
+      <div
+        className="flex items-center justify-around py-2 px-1 rounded-[28px]"
+        style={{
+          background: 'rgba(9, 11, 26, 0.72)',
+          backdropFilter: 'blur(40px) saturate(2.2)',
+          WebkitBackdropFilter: 'blur(40px) saturate(2.2)',
+          border: '1px solid rgba(255, 255, 255, 0.09)',
+          boxShadow: '0 8px 48px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.05) inset',
+        }}
+      >
         {TABS.map(({ id, icon: Icon, label }) => {
           const isActive = active === id
           return (
             <button
               key={id}
               onClick={() => onChange(id)}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${
-                isActive ? 'text-accent' : 'text-gray-500'
-              }`}
+              className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all"
+              style={isActive ? {
+                background: 'rgba(124, 58, 237, 0.18)',
+              } : {}}
             >
               <Icon
-                size={22}
+                size={21}
                 strokeWidth={isActive ? 2.5 : 1.8}
-                className={isActive ? 'drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : ''}
+                style={{
+                  color: isActive ? '#a78bfa' : 'rgba(240,244,255,0.40)',
+                  filter: isActive ? 'drop-shadow(0 0 6px rgba(124,58,237,0.7))' : 'none',
+                }}
               />
-              <span className={`text-[10px] font-medium ${isActive ? 'text-accent' : 'text-gray-500'}`}>
+              <span
+                className="text-[10px] font-medium"
+                style={{ color: isActive ? '#a78bfa' : 'rgba(240,244,255,0.35)' }}
+              >
                 {label}
               </span>
             </button>
