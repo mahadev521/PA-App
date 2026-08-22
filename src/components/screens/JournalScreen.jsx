@@ -3,7 +3,7 @@ import ExperienceScreen from './ExperienceScreen'
 import CoachScreen from './CoachScreen'
 import { BookOpen, Compass } from 'lucide-react'
 
-export default function JournalScreen({ experiences, entries, onAdd, onDelete }) {
+export default function JournalScreen({ experiences, entries, onAdd, onDelete, embedded = false }) {
   const [mode, setMode] = useState('experiences')
 
   return (

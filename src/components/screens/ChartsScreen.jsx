@@ -62,7 +62,7 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
   )
 }
 
-export default function ChartsScreen({ entries }) {
+export default function ChartsScreen({ entries, embedded = false }) {
   const [activeMetric, setActiveMetric] = useState(METRICS[0])
   const [range, setRange] = useState(30)
   const [dirFilter, setDirFilter] = useState('all')
@@ -135,7 +135,10 @@ export default function ChartsScreen({ entries }) {
   const displayMetric = activeInView || visibleMetrics[0]
 
   return (
-    <div className="screen space-y-5 animate-fade-in">
+    <div
+      className={`${embedded ? 'px-4 space-y-5 animate-fade-in' : 'screen space-y-5 animate-fade-in'}`}
+      style={embedded ? { paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))' } : {}}
+    >
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white">Charts</h1>
         <div className="flex gap-1.5">

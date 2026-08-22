@@ -38,7 +38,7 @@ function BadgeItem({ badge, earned }) {
   )
 }
 
-export default function ProgressScreen({ levelInfo, streaks, earnedBadges, totalXP, entries }) {
+export default function ProgressScreen({ levelInfo, streaks, earnedBadges, totalXP, entries, embedded = false }) {
   const [activeFilter, setActiveFilter] = useState('milestone')
   const filteredBadges = BADGE_DEFS.filter(b => b.cat === activeFilter)
   const earnedCount = BADGE_DEFS.filter(b => earnedBadges.has(b.id)).length
@@ -47,8 +47,11 @@ export default function ProgressScreen({ levelInfo, streaks, earnedBadges, total
   const nextLevels = LEVELS.filter(l => l.level > levelInfo.level).slice(0, 2)
 
   return (
-    <div className="screen space-y-5 animate-fade-in">
-      <h1 className="text-xl font-bold text-white">Progress</h1>
+    <div
+      className={`${embedded ? 'px-4 space-y-5 animate-fade-in' : 'screen space-y-5 animate-fade-in'}`}
+      style={embedded ? { paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))' } : {}}
+    >
+      {!embedded && <h1 className="text-xl font-bold text-white">Progress</h1>}
 
       {/* Level Hero */}
       <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-accent/20 to-accent-dark/10 border border-accent/20">

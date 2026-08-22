@@ -247,7 +247,7 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
 
       {/* Level + XP — tappable → Progress */}
       <button className="card-elevated glow-accent space-y-3 w-full text-left active:scale-[0.98] transition-transform"
-        onClick={() => onNavigate('progress')}>
+        onClick={() => onNavigate('life')}>
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs uppercase tracking-widest" style={{ color: 'rgba(240,244,255,0.45)' }}>
@@ -334,7 +334,7 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
           <div className="card border border-dashed flex flex-col items-center gap-3 py-8"
             style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
             <p className="text-sm text-center" style={{ color: 'rgba(240,244,255,0.45)' }}>Nothing logged yet today.</p>
-            <button onClick={() => onNavigate('log')} className="btn-primary flex items-center gap-2">
+            <button onClick={() => onNavigate('daily')} className="btn-primary flex items-center gap-2">
               <Plus size={16} /> Log Today
             </button>
           </div>

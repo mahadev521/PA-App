@@ -193,7 +193,7 @@ function RitualSection({ title, emoji, items, rituals, onToggle, quote, completi
 
 // ─── Screen ───────────────────────────────────────────────────────
 
-export default function RitualScreen({ todayEntry, onSave }) {
+export default function RitualScreen({ todayEntry, onSave, embedded = false }) {
   const today = todayStr()
   const isWeekend = [0, 6].includes(new Date().getDay())
   const [rituals, setRituals] = useState(todayEntry?.rituals || {})
@@ -213,7 +213,10 @@ export default function RitualScreen({ todayEntry, onSave }) {
   const overallPct = Math.round((totalDone / totalItems) * 100)
 
   return (
-    <div className="screen space-y-4 animate-fade-in">
+    <div
+      className={`${embedded ? 'px-4 space-y-4 animate-fade-in' : 'screen space-y-4 animate-fade-in'}`}
+      style={embedded ? { paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))' } : {}}
+    >
       <div>
         <h1 className="text-xl font-bold text-white">Rituals</h1>
         <p className="text-xs text-gray-400 mt-0.5">Tap any ritual to expand · Tap <Info size={10} className="inline" /> for the book principle</p>

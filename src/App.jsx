@@ -1,20 +1,12 @@
-import { useState, lazy, Suspense } from 'react'
-import BottomNav from './components/layout/BottomNav'
-import HomeScreen from './components/screens/HomeScreen'
-import LogScreen from './components/screens/LogScreen'
-import RitualScreen from './components/screens/RitualScreen'
-import JournalScreen from './components/screens/JournalScreen'
+import { useState } from 'react'
+import BottomNav      from './components/layout/BottomNav'
+import HomeScreen     from './components/screens/HomeScreen'
+import DailyScreen    from './components/screens/DailyScreen'
+import LifeScreen     from './components/screens/LifeScreen'
 import SettingsScreen from './components/screens/SettingsScreen'
-import ProgressScreen from './components/screens/ProgressScreen'
 import OnboardingScreen from './components/screens/OnboardingScreen'
 import UtilitiesScreen from './components/screens/UtilitiesScreen'
 import { useApp } from './hooks/useApp'
-
-const ChartsScreen = lazy(() => import('./components/screens/ChartsScreen'))
-
-const Loader = () => (
-  <div className="screen flex items-center justify-center text-gray-400 text-sm">Loading…</div>
-)
 
 export default function App() {
   const [tab, setTab] = useState('home')
@@ -50,9 +42,9 @@ export default function App() {
             onNavigate={setTab}
           />
         )
-      case 'log':
+      case 'daily':
         return (
-          <LogScreen
+          <DailyScreen
             todayEntry={app.todayEntry}
             onSave={app.logEntry}
             tasks={app.tasks}
@@ -61,39 +53,17 @@ export default function App() {
             onDeleteTask={app.removeTask}
           />
         )
-      case 'ritual':
-        return <RitualScreen todayEntry={app.todayEntry} onSave={app.logEntry} />
-      case 'charts':
+      case 'life':
         return (
-          <Suspense fallback={<Loader />}>
-            <ChartsScreen entries={app.entries} />
-          </Suspense>
-        )
-      case 'journal':
-        return (
-          <JournalScreen
+          <LifeScreen
             experiences={app.experiences}
             entries={app.entries}
             onAdd={app.addExperience}
             onDelete={app.removeExperience}
-          />
-        )
-      case 'progress':
-        return (
-          <ProgressScreen
             levelInfo={app.levelInfo}
             streaks={app.streaks}
             earnedBadges={app.earnedBadges}
             totalXP={app.totalXP}
-            entries={app.entries}
-          />
-        )
-      case 'settings':
-        return (
-          <SettingsScreen
-            profile={app.profile}
-            onUpdateProfile={app.updateProfile}
-            onReload={app.reload}
           />
         )
       case 'utilities':
@@ -110,6 +80,14 @@ export default function App() {
             onAddUtilityItem={app.addUtilityItem}
             onToggleUtilityItem={app.toggleUtilityItem}
             onDeleteUtilityItem={app.removeUtilityItem}
+          />
+        )
+      case 'settings':
+        return (
+          <SettingsScreen
+            profile={app.profile}
+            onUpdateProfile={app.updateProfile}
+            onReload={app.reload}
           />
         )
       default:
