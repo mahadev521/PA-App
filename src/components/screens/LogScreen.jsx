@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { todayStr, calcSleepHours } from '../../utils/gamification'
 import { getEntry } from '../../utils/storage'
-import { ChevronDown, ChevronUp, Check, Save, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { ChevronDown, ChevronUp, Check, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import TaskList from '../TaskList'
 
 const EMPTY = {
@@ -286,11 +286,15 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
   const today = todayStr()
   const [selectedDate, setSelectedDate] = useState(today)
   const [form, setForm] = useState({ ...EMPTY, ...(todayEntry || {}) })
-  const [saved, setSaved] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('idle')
   const isToday = selectedDate === today
   const draftKey = `log-draft-${selectedDate}`
+  const autoSaveTimer = useRef(null)
+  const pendingFormRef = useRef(null)
 
   useEffect(() => {
+    clearTimeout(autoSaveTimer.current)
+    setSaveStatus('idle')
     async function load() {
       const stored = selectedDate === today
         ? (todayEntry || {})
@@ -298,7 +302,6 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
       let draft = {}
       try { draft = JSON.parse(sessionStorage.getItem(draftKey) || '{}') } catch {}
       setForm({ ...EMPTY, ...stored, ...draft })
-      setSaved(false)
     }
     load()
   }, [selectedDate, todayEntry, today, draftKey])
@@ -307,24 +310,25 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
   useEffect(() => {
     if (form.bed_time && form.wake_time) {
       const calc = calcSleepHours(form.bed_time, form.wake_time)
-      if (calc) setForm(prev => ({ ...prev, sleep_hours: calc }))
+      if (calc && calc !== form.sleep_hours) setForm(prev => ({ ...prev, sleep_hours: calc }))
     }
   }, [form.bed_time, form.wake_time])
 
   function set(field, value) {
     setForm(prev => {
       const updated = { ...prev, [field]: value }
+      pendingFormRef.current = updated
       try { sessionStorage.setItem(draftKey, JSON.stringify(updated)) } catch {}
       return updated
     })
-    setSaved(false)
-  }
-
-  async function handleSave() {
-    await onSave({ ...form, date: selectedDate })
-    try { sessionStorage.removeItem(draftKey) } catch {}
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    setSaveStatus('saving')
+    clearTimeout(autoSaveTimer.current)
+    autoSaveTimer.current = setTimeout(async () => {
+      await onSave({ ...pendingFormRef.current, date: selectedDate })
+      try { sessionStorage.removeItem(draftKey) } catch {}
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
+    }, 800)
   }
 
   function navDate(days) {
@@ -348,12 +352,13 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
           <h1 className="text-xl font-bold text-white">Daily Log</h1>
           {!isToday && <p className="text-xs text-amber-400 font-medium">Editing past entry</p>}
         </div>
-        <button onClick={handleSave}
-          className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${
-            saved ? 'bg-emerald/20 text-emerald border border-emerald' : 'btn-primary'
+        {saveStatus !== 'idle' && (
+          <span className={`text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            saveStatus === 'saved' ? 'text-emerald' : 'text-gray-500'
           }`}>
-          {saved ? <><Check size={16} /> Saved</> : <><Save size={16} /> Save</>}
-        </button>
+            {saveStatus === 'saved' ? <><Check size={12} /> Saved</> : 'Saving…'}
+          </span>
+        )}
       </div>
 
       {/* Date nav */}
@@ -539,9 +544,6 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
         <Toggle label="Wrote in my physical diary" emoji="📓" field="diary_done" value={form.diary_done} onChange={set} />
       </Section>
 
-      <button onClick={handleSave} className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base rounded-3xl">
-        {saved ? <><Check size={18} /> Saved!</> : <><Save size={18} /> Save {isToday ? "Today's" : dateLabel} Log</>}
-      </button>
     </div>
   )
 }
