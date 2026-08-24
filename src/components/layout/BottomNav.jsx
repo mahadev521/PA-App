@@ -34,35 +34,47 @@ const TABS = [
 export default function BottomNav({ active, onChange }) {
   return (
     <nav
-      className="w-full flex-shrink-0"
+      className="w-full flex-shrink-0 px-4"
       style={{
-        background: 'rgba(7,9,20,0.97)',
-        backdropFilter: 'blur(48px) saturate(2.4)',
-        WebkitBackdropFilter: 'blur(48px) saturate(2.4)',
-        borderTop: '1px solid rgba(255,255,255,0.07)',
+        paddingBottom: 'calc(0.4rem + env(safe-area-inset-bottom, 0px))',
+        paddingTop: '0.5rem',
+        background: '#090b1a',
       }}
     >
       <div
-        className="flex items-center justify-around px-2 pt-2"
-        style={{ paddingBottom: 'calc(0.45rem + env(safe-area-inset-bottom, 0px))' }}
+        className="flex items-center justify-around py-2 px-1 rounded-[26px]"
+        style={{
+          background: 'rgba(7,9,20,0.94)',
+          backdropFilter: 'blur(48px) saturate(2.4)',
+          WebkitBackdropFilter: 'blur(48px) saturate(2.4)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          boxShadow: '0 -1px 0 rgba(255,255,255,0.05) inset, 0 8px 40px rgba(0,0,0,0.55)',
+        }}
       >
-        {TABS.map(({ id, icon: Icon, label, from, glow }) => {
+        {TABS.map(({ id, icon: Icon, label, from, to, glow }) => {
           const isActive = active === id
           return (
             <button
               key={id}
               onClick={() => onChange(id)}
-              className="flex flex-col items-center gap-1 flex-1 py-1 transition-all active:scale-90"
+              className="flex flex-col items-center gap-1 px-3 transition-all active:scale-90"
             >
               <div
-                className="w-11 h-11 flex items-center justify-center rounded-[16px] transition-all duration-300"
-                style={isActive ? {
-                  background: `linear-gradient(145deg, ${from}, ${from}cc)`,
-                  boxShadow: `0 3px 16px ${glow}`,
-                } : {}}
+                className="w-11 h-11 rounded-[16px] flex items-center justify-center transition-all duration-300"
+                style={
+                  isActive
+                    ? {
+                        background: `linear-gradient(145deg, ${from}, ${to})`,
+                        boxShadow: `0 4px 20px ${glow}`,
+                      }
+                    : {
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.07)',
+                      }
+                }
               >
                 <Icon
-                  size={22}
+                  size={20}
                   strokeWidth={isActive ? 2.4 : 1.7}
                   color={isActive ? '#fff' : 'rgba(240,244,255,0.32)'}
                 />
