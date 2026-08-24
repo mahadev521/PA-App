@@ -19,7 +19,7 @@ export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onTo
       <div
         className="sticky top-0 z-10 px-4 pb-2"
         style={{
-          paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+          paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))',
           background: 'rgba(9,11,26,0.95)',
           backdropFilter: 'blur(16px)',
         }}

@@ -506,7 +506,7 @@ export function ChecklistsView({ checklists, onSave, onDelete, onBack }) {
     return (
       <>
         <div className="sticky top-0 z-10 px-4 pb-3"
-          style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))', background: 'rgba(9,11,26,0.95)', backdropFilter: 'blur(12px)' }}>
+          style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))', background: 'rgba(9,11,26,0.95)', backdropFilter: 'blur(12px)' }}>
           <div className="flex items-center gap-3">
             <button onClick={() => setView('hub')} className="p-1.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.07)' }}>
               <ChevronLeft size={18} color="rgba(255,255,255,0.7)" />
@@ -523,7 +523,7 @@ export function ChecklistsView({ checklists, onSave, onDelete, onBack }) {
     return (
       <>
         <div className="sticky top-0 z-10 px-4 pb-3"
-          style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))', background: 'rgba(9,11,26,0.95)', backdropFilter: 'blur(12px)' }}>
+          style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))', background: 'rgba(9,11,26,0.95)', backdropFilter: 'blur(12px)' }}>
           <div className="flex items-center gap-3">
             <button onClick={() => setView('hub')} className="p-1.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.07)' }}>
               <ChevronLeft size={18} color="rgba(255,255,255,0.7)" />
@@ -544,7 +544,7 @@ export function ChecklistsView({ checklists, onSave, onDelete, onBack }) {
   return (
     <>
       <div className="sticky top-0 z-10 px-4 pb-3"
-        style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))', background: 'rgba(9,11,26,0.95)', backdropFilter: 'blur(12px)' }}>
+        style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))', background: 'rgba(9,11,26,0.95)', backdropFilter: 'blur(12px)' }}>
         <div className="flex items-center gap-3">
           {onBack && (
             <button onClick={onBack} className="p-1.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.07)' }}>

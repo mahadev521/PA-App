@@ -473,10 +473,10 @@ export default function UtilitiesScreen({
 
   if (!activeUtility) {
     return (
-      <div className="min-h-screen bg-base">
+      <div className="bg-base">
         <div className="sticky top-0 z-10 px-4 pt-4 pb-3"
           style={{
-            paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+            paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))',
             background: 'rgba(9,11,26,0.95)',
             backdropFilter: 'blur(12px)',
           }}>
@@ -576,17 +576,17 @@ export default function UtilitiesScreen({
   // Checklists owns its own header/navigation — render fullscreen without outer wrapper header
   if (activeUtility === 'checklists') {
     return (
-      <div className="min-h-screen bg-base">
+      <div className="bg-base">
         {renderUtility()}
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-base">
+    <div className="bg-base">
       <div className="sticky top-0 z-10 px-4 pb-3"
         style={{
-          paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+          paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))',
           background: 'rgba(9,11,26,0.95)',
           backdropFilter: 'blur(12px)',
         }}>

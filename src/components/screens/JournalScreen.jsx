@@ -7,10 +7,10 @@ export default function JournalScreen({ experiences, entries, onAdd, onDelete, e
   const [mode, setMode] = useState('experiences')
 
   return (
-    <div className="min-h-screen bg-base">
+    <div className="bg-base">
       {/* Mode toggle */}
       <div className="sticky top-0 z-10 bg-base/95 backdrop-blur-sm px-4 pt-4 pb-2"
-        style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}>
+        style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))' }}>
         <div className="flex bg-elevated rounded-2xl p-1">
           <button
             onClick={() => setMode('experiences')}
