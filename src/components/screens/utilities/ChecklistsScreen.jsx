@@ -119,17 +119,21 @@ function mergeWithSaved(saved) {
   const savedMap = Object.fromEntries(saved.map(c => [c.id, c]))
   const defaults = DEFAULT_CHECKLISTS.map(def => {
     const existing = savedMap[def.id]
-    if (!existing) return { ...def, items: def.items.map(i => ({ ...i, checked: false })) }
-    // Merge: keep template labels, preserve checked state
-    const checkedMap = Object.fromEntries((existing.items || []).map(i => [i.id, i.checked || false]))
-    return {
-      ...def,
-      items: def.items.map(i => ({ ...i, checked: checkedMap[i.id] || false })),
+    if (!existing) {
+      // First load: init from template, record canonical order
+      const items = def.items.map(i => ({ ...i, checked: false }))
+      return { ...def, items, baseOrder: items.map(i => i.id) }
     }
+    // Use saved items as-is so user deletions / additions / reorders persist
+    const items = existing.items || def.items.map(i => ({ ...i, checked: false }))
+    const baseOrder = existing.baseOrder || items.map(i => i.id)
+    return { ...def, items, baseOrder }
   })
-  // Custom checklists (not defaults)
   const defaultIds = new Set(DEFAULT_CHECKLISTS.map(d => d.id))
-  const custom = saved.filter(c => !defaultIds.has(c.id))
+  const custom = saved.filter(c => !defaultIds.has(c.id)).map(c => ({
+    ...c,
+    baseOrder: c.baseOrder || (c.items || []).map(i => i.id),
+  }))
   return [...defaults, ...custom]
 }
 
@@ -191,7 +195,10 @@ function ChecklistHub({ checklists, onSelect, onNew }) {
 // ─── Single Checklist Detail ──────────────────────────────────────
 
 function ChecklistDetail({ checklist, onUpdate, onDelete, onBack }) {
-  const [items, setItems]         = useState(checklist.items || [])
+  const [items, setItems]               = useState(checklist.items || [])
+  const [baseOrder, setBaseOrder]       = useState(
+    () => checklist.baseOrder || (checklist.items || []).map(i => i.id)
+  )
   const [newItemLabel, setNewItemLabel] = useState('')
   const [showAddItem, setShowAddItem]   = useState(false)
 
@@ -200,32 +207,50 @@ function ChecklistDetail({ checklist, onUpdate, onDelete, onBack }) {
   const allDone = done === total && total > 0
   const pct     = total ? Math.round((done / total) * 100) : 0
 
+  function persist(newItems, newBase) {
+    setItems(newItems)
+    setBaseOrder(newBase)
+    onUpdate({ ...checklist, items: newItems, baseOrder: newBase })
+  }
+
   function toggleItem(itemId) {
     const updated = items.map(i => i.id === itemId ? { ...i, checked: !i.checked } : i)
     setItems(updated)
-    onUpdate({ ...checklist, items: updated })
+    onUpdate({ ...checklist, items: updated, baseOrder })
   }
 
   function resetAll() {
-    const updated = items.map(i => ({ ...i, checked: false }))
-    setItems(updated)
-    onUpdate({ ...checklist, items: updated })
+    // Uncheck all and restore the stored base order
+    const itemMap = Object.fromEntries(items.map(i => [i.id, i]))
+    const reordered = baseOrder
+      .filter(id => itemMap[id])
+      .map(id => ({ ...itemMap[id], checked: false }))
+    setItems(reordered)
+    onUpdate({ ...checklist, items: reordered, baseOrder })
   }
 
   function addItem() {
     if (!newItemLabel.trim()) return
     const newItem = { id: `item_${Date.now()}`, label: newItemLabel.trim(), checked: false }
-    const updated = [...items, newItem]
-    setItems(updated)
-    onUpdate({ ...checklist, items: updated })
+    const newItems = [...items, newItem]
+    const newBase  = [...baseOrder, newItem.id]
+    persist(newItems, newBase)
     setNewItemLabel('')
     setShowAddItem(false)
   }
 
   function deleteItem(itemId) {
-    const updated = items.filter(i => i.id !== itemId)
-    setItems(updated)
-    onUpdate({ ...checklist, items: updated })
+    persist(items.filter(i => i.id !== itemId), baseOrder.filter(id => id !== itemId))
+  }
+
+  function moveItem(itemId, direction) {
+    const idx = items.findIndex(i => i.id === itemId)
+    if (direction === 'up' && idx === 0) return
+    if (direction === 'down' && idx === items.length - 1) return
+    const next = [...items]
+    const swap = direction === 'up' ? idx - 1 : idx + 1
+    ;[next[idx], next[swap]] = [next[swap], next[idx]]
+    persist(next, next.map(i => i.id))
   }
 
   return (
@@ -256,12 +281,13 @@ function ChecklistDetail({ checklist, onUpdate, onDelete, onBack }) {
         {items.map((item, idx) => (
           <div
             key={item.id}
-            className="flex items-center gap-3 p-3 rounded-2xl transition-all"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all"
             style={{
               background: item.checked ? 'rgba(16,185,129,0.05)' : 'rgba(255,255,255,0.05)',
               border: item.checked ? '1px solid rgba(16,185,129,0.2)' : '1px solid rgba(255,255,255,0.07)',
             }}
           >
+            {/* Checkbox */}
             <button
               onClick={() => toggleItem(item.id)}
               className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
@@ -272,14 +298,38 @@ function ChecklistDetail({ checklist, onUpdate, onDelete, onBack }) {
             >
               {item.checked && <Check size={12} color="#10b981" strokeWidth={3} />}
             </button>
+
+            {/* Label */}
             <span className={`flex-1 text-sm leading-snug ${item.checked ? 'line-through text-gray-500' : 'text-white'}`}>
               {item.label}
             </span>
-            {!checklist.isDefault && (
-              <button onClick={() => deleteItem(item.id)} className="flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                <Trash2 size={13} />
+
+            {/* Move up / down */}
+            <div className="flex flex-col gap-px flex-shrink-0">
+              <button
+                onClick={() => moveItem(item.id, 'up')}
+                className="w-5 h-5 flex items-center justify-center rounded transition-all active:scale-90"
+                style={{ color: idx === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.38)' }}
+              >
+                <ChevronUp size={13} />
               </button>
-            )}
+              <button
+                onClick={() => moveItem(item.id, 'down')}
+                className="w-5 h-5 flex items-center justify-center rounded transition-all active:scale-90"
+                style={{ color: idx === items.length - 1 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.38)' }}
+              >
+                <ChevronDown size={13} />
+              </button>
+            </div>
+
+            {/* Delete — available on all items */}
+            <button
+              onClick={() => deleteItem(item.id)}
+              className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-xl transition-all active:scale-90"
+              style={{ color: 'rgba(244,63,94,0.45)' }}
+            >
+              <Trash2 size={13} />
+            </button>
           </div>
         ))}
       </div>
