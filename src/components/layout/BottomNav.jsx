@@ -35,7 +35,11 @@ export default function BottomNav({ active, onChange }) {
   return (
     <nav
       className="w-full flex-shrink-0 px-5"
-      style={{ paddingBottom: 'calc(1.1rem + env(safe-area-inset-bottom, 0px))', paddingTop: '0.5rem' }}
+      style={{
+        paddingBottom: 'calc(1.1rem + env(safe-area-inset-bottom, 0px))',
+        paddingTop: '0.5rem',
+        background: '#090b1a',  // fill safe-area gap with app bg color
+      }}
     >
       <div
         className="flex items-center justify-around py-3 px-2 rounded-[32px]"
