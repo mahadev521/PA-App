@@ -23,8 +23,8 @@ export default function OnboardingScreen({ onComplete }) {
   function finish() { onComplete(name.trim() || 'Friend') }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-between px-6 py-12 animate-fade-in"
-      style={{ paddingTop: 'calc(3rem + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(3rem + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="h-full flex flex-col items-center justify-between px-6 animate-fade-in overflow-y-auto"
+      style={{ paddingTop: 'calc(2.5rem + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}>
 
       {/* Step indicators */}
       <div className="flex gap-2">

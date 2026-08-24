@@ -14,7 +14,7 @@ export default function App() {
 
   if (app.loading) {
     return (
-      <div className="min-h-screen bg-base flex flex-col items-center justify-center gap-4">
+      <div className="flex-1 bg-base flex flex-col items-center justify-center gap-4">
         <div className="text-4xl animate-bounce-in">🚀</div>
         <p className="text-gray-400 text-sm">Loading LifeOS…</p>
       </div>
@@ -23,7 +23,11 @@ export default function App() {
 
   // Show onboarding on first launch (name is default 'You')
   if (!app.loading && (!app.profile?.name || app.profile.name === 'You')) {
-    return <OnboardingScreen onComplete={name => app.updateProfile({ name })} />
+    return (
+      <div className="flex-1 overflow-hidden">
+        <OnboardingScreen onComplete={name => app.updateProfile({ name })} />
+      </div>
+    )
   }
 
   function renderScreen() {

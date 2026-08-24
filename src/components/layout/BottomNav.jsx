@@ -34,58 +34,42 @@ const TABS = [
 export default function BottomNav({ active, onChange }) {
   return (
     <nav
-      className="w-full flex-shrink-0 px-5"
+      className="w-full flex-shrink-0"
       style={{
-        paddingBottom: 'calc(1.1rem + env(safe-area-inset-bottom, 0px))',
-        paddingTop: '0.5rem',
-        background: '#090b1a',  // fill safe-area gap with app bg color
+        background: 'rgba(7,9,20,0.97)',
+        backdropFilter: 'blur(48px) saturate(2.4)',
+        WebkitBackdropFilter: 'blur(48px) saturate(2.4)',
+        borderTop: '1px solid rgba(255,255,255,0.07)',
       }}
     >
       <div
-        className="flex items-center justify-around py-3 px-2 rounded-[32px]"
-        style={{
-          background: 'rgba(7,9,20,0.92)',
-          backdropFilter: 'blur(48px) saturate(2.4)',
-          WebkitBackdropFilter: 'blur(48px) saturate(2.4)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow:
-            '0 -1px 0 rgba(255,255,255,0.06) inset, 0 2px 0 rgba(255,255,255,0.04) inset,' +
-            '0 8px 48px rgba(0,0,0,0.6), 0 24px 64px rgba(0,0,0,0.4)',
-        }}
+        className="flex items-center justify-around px-2 pt-2"
+        style={{ paddingBottom: 'calc(0.45rem + env(safe-area-inset-bottom, 0px))' }}
       >
-        {TABS.map(({ id, icon: Icon, label, from, to, glow }) => {
+        {TABS.map(({ id, icon: Icon, label, from, glow }) => {
           const isActive = active === id
           return (
             <button
               key={id}
               onClick={() => onChange(id)}
-              className="flex flex-col items-center gap-1.5 px-3 transition-all active:scale-90"
+              className="flex flex-col items-center gap-1 flex-1 py-1 transition-all active:scale-90"
             >
               <div
-                className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-300"
-                style={
-                  isActive
-                    ? {
-                        background: `linear-gradient(145deg, ${from}, ${to})`,
-                        boxShadow: `0 4px 24px ${glow}, 0 0 0 1px ${from}30`,
-                      }
-                    : {
-                        background: 'rgba(255,255,255,0.055)',
-                        border: '1px solid rgba(255,255,255,0.07)',
-                      }
-                }
+                className="w-11 h-11 flex items-center justify-center rounded-[16px] transition-all duration-300"
+                style={isActive ? {
+                  background: `linear-gradient(145deg, ${from}, ${from}cc)`,
+                  boxShadow: `0 3px 16px ${glow}`,
+                } : {}}
               >
                 <Icon
-                  size={21}
+                  size={22}
                   strokeWidth={isActive ? 2.4 : 1.7}
-                  color={isActive ? '#ffffff' : 'rgba(240,244,255,0.32)'}
+                  color={isActive ? '#fff' : 'rgba(240,244,255,0.32)'}
                 />
               </div>
               <span
                 className="text-[10px] font-semibold tracking-wide"
-                style={{
-                  color: isActive ? from : 'rgba(240,244,255,0.28)',
-                }}
+                style={{ color: isActive ? from : 'rgba(240,244,255,0.28)' }}
               >
                 {label}
               </span>
