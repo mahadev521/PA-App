@@ -116,7 +116,8 @@
   /* ── Buttons ────────────────────────────────────────────── */
   .btn-primary {
     background: linear-gradient(135deg, #7c3aed, #6d28d9);
-    @apply text-white font-semibold px-6 py-3 rounded-3xl transition-all active:scale-[0.97];
+    @apply text-white font-semibold px-6 py-3 rounded-3xl transition-all active:scale-[0.97] text-sm;
+    min-height: 44px;
     box-shadow: 0 4px 20px rgba(124, 58, 237, 0.40), inset 0 1px 0 rgba(255,255,255,0.15);
   }
   .btn-primary:hover { box-shadow: 0 6px 28px rgba(124, 58, 237, 0.55); }
@@ -124,13 +125,14 @@
   .btn-ghost {
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.09);
-    @apply text-white font-medium px-4 py-2.5 rounded-2xl transition-all active:scale-[0.97];
+    @apply text-white font-medium px-4 py-3 rounded-2xl transition-all active:scale-[0.97] text-sm;
+    min-height: 44px;
     backdrop-filter: blur(12px);
   }
 
   /* ── Typography ─────────────────────────────────────────── */
   .label-sm     { @apply text-xs font-medium uppercase tracking-wider; color: rgba(240,244,255,0.45); }
-  .section-title{ @apply text-xs font-semibold uppercase tracking-widest mb-3; color: rgba(240,244,255,0.40); }
+  .section-title{ @apply text-sm font-semibold uppercase tracking-widest mb-3; color: rgba(240,244,255,0.50); }
   .metric-value { @apply text-2xl font-bold text-white; }
   .gradient-text-accent { @apply bg-gradient-to-r from-accent-light to-sky bg-clip-text text-transparent; }
   .gradient-text-gold   { @apply bg-gradient-to-r from-gold to-amber-300 bg-clip-text text-transparent; }

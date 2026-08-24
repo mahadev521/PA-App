@@ -69,9 +69,9 @@ function WeekTracker({ entries }) {
           return (
             <div key={date} className="flex flex-col items-center gap-1.5">
               <span className="text-[10px] font-medium" style={{ color: isWeekend ? 'rgba(167,139,250,0.5)' : 'rgba(240,244,255,0.35)' }}>{label}</span>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all" style={{ background: bg, border }}>
-                {logged && !isFuture ? <Check size={13} style={{ color: textCol }} strokeWidth={2.5} /> : null}
-                {isToday && !logged ? <div className="w-2 h-2 rounded-full" style={{ background: '#a78bfa' }} /> : null}
+              <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all" style={{ background: bg, border }}>
+                {logged && !isFuture ? <Check size={15} style={{ color: textCol }} strokeWidth={2.5} /> : null}
+                {isToday && !logged ? <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#a78bfa' }} /> : null}
               </div>
             </div>
           )
@@ -83,21 +83,21 @@ function WeekTracker({ entries }) {
 
 function StatPill({ emoji, label, value, color = 'text-white' }) {
   return (
-    <div className="bg-elevated rounded-2xl p-3 flex flex-col gap-1">
-      <span className="text-lg">{emoji}</span>
-      <span className={`text-xl font-bold ${color}`}>{value ?? '—'}</span>
-      <span className="text-[11px] text-gray-400">{label}</span>
+    <div className="bg-elevated rounded-2xl p-4 flex flex-col gap-1.5">
+      <span className="text-xl">{emoji}</span>
+      <span className={`text-2xl font-bold ${color}`}>{value ?? '—'}</span>
+      <span className="text-xs text-gray-400">{label}</span>
     </div>
   )
 }
 
 function StreakPill({ emoji, label, count }) {
   return (
-    <div className={`flex items-center gap-2 bg-elevated rounded-xl px-3 py-2 ${count > 0 ? '' : 'opacity-40'}`}>
-      <span className="text-base">{emoji}</span>
+    <div className={`flex items-center gap-3 bg-elevated rounded-2xl px-4 py-3.5 ${count > 0 ? '' : 'opacity-40'}`}>
+      <span className="text-xl">{emoji}</span>
       <div>
-        <div className="text-sm font-bold text-white">{count}d</div>
-        <div className="text-[10px] text-gray-400">{label}</div>
+        <div className="text-base font-bold text-white">{count}d</div>
+        <div className="text-xs text-gray-400">{label}</div>
       </div>
     </div>
   )
@@ -177,14 +177,14 @@ function DailyChallenge({ todayEntry, onSave }) {
 
       <button
         onClick={toggle}
-        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95 ${
+        className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${
           done
             ? 'bg-emerald/20 border border-emerald text-emerald'
             : 'bg-accent/20 border border-accent/40 text-accent hover:bg-accent/30'
         }`}
       >
         {done ? (
-          <><Check size={15} /> Done — you're building who you want to be.</>
+          <><Check size={16} /> Done — you're building who you want to be.</>
         ) : (
           '↑ Mark as Done'
         )}
@@ -239,9 +239,9 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
           </p>
           <p className="text-base font-semibold text-white leading-snug">{greeting}</p>
         </div>
-        <button onClick={() => onNavigate('settings')} className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+        <button onClick={() => onNavigate('settings')} className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)' }}>
-          <Settings size={16} style={{ color: 'rgba(240,244,255,0.45)' }} />
+          <Settings size={18} style={{ color: 'rgba(240,244,255,0.55)' }} />
         </button>
       </div>
 

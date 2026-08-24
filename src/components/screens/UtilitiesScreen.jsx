@@ -227,12 +227,12 @@ function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete })
           <div key={item.id} className="flex items-center gap-3 p-3 rounded-2xl"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
             <button onClick={() => onToggle(item.id)}
-              className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center"
+              className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center active:scale-90 transition-transform"
               style={{ borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' }} />
             <span className="flex-1 text-sm text-white/90 leading-snug">{item.title}</span>
-            <button onClick={() => onDelete(item.id)} className="flex-shrink-0"
-              style={{ color: 'rgba(255,255,255,0.2)' }}>
-              <Trash2 size={14} />
+            <button onClick={() => onDelete(item.id)} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl active:bg-white/5"
+              style={{ color: 'rgba(255,255,255,0.3)' }}>
+              <Trash2 size={16} />
             </button>
           </div>
         ))}
@@ -252,16 +252,16 @@ function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete })
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-2xl"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', opacity: 0.55 }}>
               <button onClick={() => onToggle(item.id)}
-                className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center active:scale-90 transition-transform"
                 style={{ borderColor: '#a78bfa', background: 'rgba(124,58,237,0.4)' }}>
-                <Check size={10} color="#a78bfa" strokeWidth={3} />
+                <Check size={13} color="#a78bfa" strokeWidth={3} />
               </button>
               <span className="flex-1 text-sm line-through" style={{ color: 'rgba(255,255,255,0.35)' }}>
                 {item.title}
               </span>
-              <button onClick={() => onDelete(item.id)} className="flex-shrink-0"
-                style={{ color: 'rgba(255,255,255,0.15)' }}>
-                <Trash2 size={14} />
+              <button onClick={() => onDelete(item.id)} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl active:bg-white/5"
+                style={{ color: 'rgba(255,255,255,0.2)' }}>
+                <Trash2 size={16} />
               </button>
             </div>
           ))}
@@ -327,7 +327,7 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
           const isA = section === s.id
           return (
             <button key={s.id} onClick={() => setSection(s.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all min-h-[40px]"
               style={{
                 background: isA ? 'rgba(124,58,237,0.25)' : 'rgba(255,255,255,0.06)',
                 color:      isA ? '#a78bfa' : 'rgba(255,255,255,0.4)',
@@ -403,7 +403,7 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-2xl"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
               <button onClick={() => onUpdateStatus(item.id, 'done')}
-                className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center active:scale-90 transition-transform"
                 style={{ borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' }} />
               <span className="text-base leading-none flex-shrink-0">{tagInfo?.emoji || '📌'}</span>
               <span className="flex-1 text-sm text-white/90 leading-snug">{item.title}</span>
@@ -436,9 +436,9 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-2xl"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', opacity: 0.5 }}>
               <button onClick={() => onUpdateStatus(item.id, 'today')}
-                className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center active:scale-90 transition-transform"
                 style={{ borderColor: '#a78bfa', background: 'rgba(124,58,237,0.4)' }}>
-                <Check size={10} color="#a78bfa" strokeWidth={3} />
+                <Check size={13} color="#a78bfa" strokeWidth={3} />
               </button>
               <span className="flex-1 text-sm line-through" style={{ color: 'rgba(255,255,255,0.35)' }}>{item.title}</span>
               <button onClick={() => onDelete(item.id)} className="flex-shrink-0"
@@ -592,9 +592,9 @@ export default function UtilitiesScreen({
         }}>
         <div className="flex items-center gap-3">
           <button onClick={() => setActiveUtility(null)}
-            className="p-1.5 rounded-xl"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center"
             style={{ background: 'rgba(255,255,255,0.07)' }}>
-            <ChevronLeft size={18} color="rgba(255,255,255,0.7)" />
+            <ChevronLeft size={20} color="rgba(255,255,255,0.8)" />
           </button>
           <div>
             <h1 className="text-base font-bold text-white leading-tight">

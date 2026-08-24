@@ -14,7 +14,7 @@ export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onTo
   const [mode, setMode] = useState('log')
 
   return (
-    <div className="min-h-screen bg-base">
+    <div className="bg-base flex flex-col">
       {/* Sticky sub-header */}
       <div
         className="sticky top-0 z-10 px-4 pb-2"
@@ -34,7 +34,7 @@ export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onTo
               <button
                 key={id}
                 onClick={() => setMode(id)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-3 min-h-[48px] rounded-2xl text-sm font-semibold transition-all"
                 style={isActive
                   ? { background: gradient, color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.3)' }
                   : { color: 'rgba(240,244,255,0.45)' }

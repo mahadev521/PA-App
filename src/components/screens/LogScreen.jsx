@@ -75,20 +75,25 @@ function SliderRow({ label, emoji, field, value, onChange, min = 0, max, step = 
 }
 
 function ScoreRow({ label, emoji, field, value, onChange }) {
+  const cls = n => `flex-1 h-11 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+    value >= n
+      ? n <= 4 ? 'bg-rose text-white' : n <= 7 ? 'bg-gold text-black' : 'bg-emerald text-black'
+      : 'bg-border text-gray-500'
+  }`
   return (
     <div>
-      <div className="flex justify-between items-center mb-1.5">
+      <div className="flex justify-between items-center mb-2">
         <label className="text-sm text-gray-300">{emoji} {label}</label>
         <span className="text-sm font-bold text-white">{value}/10</span>
       </div>
-      <div className="flex gap-1.5">
-        {[1,2,3,4,5,6,7,8,9,10].map(n => (
-          <button key={n} onClick={() => onChange(field, n)}
-            className={`flex-1 h-7 rounded-lg text-xs font-bold transition-all ${
-              value >= n
-                ? n <= 4 ? 'bg-rose text-white' : n <= 7 ? 'bg-gold text-black' : 'bg-emerald text-black'
-                : 'bg-border text-gray-500'
-            }`}>{n}</button>
+      <div className="flex gap-2 mb-2">
+        {[1,2,3,4,5].map(n => (
+          <button key={n} onClick={() => onChange(field, n)} className={cls(n)}>{n}</button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        {[6,7,8,9,10].map(n => (
+          <button key={n} onClick={() => onChange(field, n)} className={cls(n)}>{n}</button>
         ))}
       </div>
     </div>
@@ -98,18 +103,18 @@ function ScoreRow({ label, emoji, field, value, onChange }) {
 function Toggle({ label, emoji, field, value, onChange, accent }) {
   return (
     <button onClick={() => onChange(field, !value)}
-      className={`flex items-center justify-between w-full p-3 rounded-xl border transition-all ${
+      className={`flex items-center justify-between w-full px-4 py-3.5 rounded-2xl border transition-all active:scale-[0.98] ${
         value
           ? accent
             ? `bg-${accent}/10 border-${accent} text-white`
             : 'bg-accent/10 border-accent text-white'
           : 'bg-elevated border-border text-gray-400'
       }`}>
-      <span className="text-sm">{emoji} {label}</span>
-      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+      <span className="text-sm flex-1 text-left">{emoji} {label}</span>
+      <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ml-3 ${
         value ? 'bg-accent border-accent' : 'border-gray-500'
       }`}>
-        {value && <Check size={12} className="text-white" />}
+        {value && <Check size={14} className="text-white" strokeWidth={3} />}
       </div>
     </button>
   )
@@ -123,18 +128,18 @@ function NumberInput({ label, emoji, field, value, onChange, min = 0, max, step 
       <label className="text-sm text-gray-300">{emoji} {label}</label>
       <div className="flex items-center gap-2">
         <button onClick={() => onChange(field, Math.max(min, (value || 0) - step))}
-          className="w-8 h-8 rounded-xl bg-border text-white font-bold flex items-center justify-center text-lg leading-none">−</button>
+          className="w-12 h-12 rounded-2xl bg-border text-white font-bold flex items-center justify-center text-2xl leading-none active:scale-95 transition-transform">−</button>
         {editing ? (
           <input ref={inputRef} type="number" inputMode="numeric" value={value || 0}
             onChange={e => onChange(field, e.target.value === '' ? 0 : +e.target.value)}
             onBlur={() => setEditing(false)}
-            className="w-16 text-center font-bold text-white bg-elevated rounded-xl py-1 outline-none focus:ring-1 focus:ring-accent text-sm" />
+            className="w-16 text-center font-bold text-white bg-elevated rounded-2xl py-2.5 outline-none focus:ring-1 focus:ring-accent text-base" />
         ) : (
           <button onClick={() => { setEditing(true); setTimeout(() => inputRef.current?.select(), 30) }}
-            className="w-16 text-center font-bold text-white py-1 bg-elevated rounded-xl text-sm">{value || 0}</button>
+            className="w-16 text-center font-bold text-white py-2.5 bg-elevated rounded-2xl text-base">{value || 0}</button>
         )}
         <button onClick={() => onChange(field, Math.min(max ?? 99999, (value || 0) + step))}
-          className="w-8 h-8 rounded-xl bg-border text-white font-bold flex items-center justify-center text-lg leading-none">+</button>
+          className="w-12 h-12 rounded-2xl bg-border text-white font-bold flex items-center justify-center text-2xl leading-none active:scale-95 transition-transform">+</button>
       </div>
     </div>
   )
@@ -210,9 +215,9 @@ function Section({ title, emoji, children, defaultOpen = true, quoteKey }) {
   const quote = quoteKey && QUOTES[quoteKey] ? getDailyQuote(QUOTES[quoteKey], quoteKey) : null
   return (
     <div className="card space-y-3">
-      <button onClick={() => setOpen(o => !o)} className="flex items-center justify-between w-full">
-        <span className="font-semibold text-white flex items-center gap-2">{emoji} {title}</span>
-        {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+      <button onClick={() => setOpen(o => !o)} className="flex items-center justify-between w-full min-h-[44px] py-1">
+        <span className="font-semibold text-white flex items-center gap-2 text-base">{emoji} {title}</span>
+        {open ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
       </button>
       {open && (
         <>
@@ -266,7 +271,7 @@ function WaterBar({ value, onChange }) {
       <div className="flex gap-1.5 flex-wrap">
         {glasses.map(g => (
           <button key={g} onClick={() => onChange('water_liters', g)}
-            className={`h-8 flex-1 min-w-[28px] rounded-lg text-[11px] font-bold border transition-all ${
+            className={`h-11 flex-1 min-w-[36px] rounded-xl text-xs font-bold border transition-all active:scale-95 ${
               value >= g ? 'bg-sky/20 border-sky text-sky' : 'bg-elevated border-border text-gray-600'
             }`}>{g}</button>
         ))}
@@ -344,28 +349,28 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
           {!isToday && <p className="text-xs text-amber-400 font-medium">Editing past entry</p>}
         </div>
         <button onClick={handleSave}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all active:scale-95 ${
+          className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${
             saved ? 'bg-emerald/20 text-emerald border border-emerald' : 'btn-primary'
           }`}>
-          {saved ? <><Check size={14} /> Saved</> : <><Save size={14} /> Save</>}
+          {saved ? <><Check size={16} /> Saved</> : <><Save size={16} /> Save</>}
         </button>
       </div>
 
       {/* Date nav */}
-      <div className="flex items-center justify-between card py-2">
-        <button onClick={() => navDate(-1)} className="p-2 rounded-xl bg-elevated active:bg-border">
-          <ChevronLeft size={16} className="text-gray-300" />
+      <div className="flex items-center justify-between card py-1">
+        <button onClick={() => navDate(-1)} className="w-11 h-11 flex items-center justify-center rounded-2xl bg-elevated active:bg-border transition-colors">
+          <ChevronLeft size={20} className="text-gray-300" />
         </button>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Calendar size={14} className="text-accent" />
+        <label className="flex items-center gap-2 cursor-pointer flex-1 justify-center">
+          <Calendar size={16} className="text-accent" />
           <span className="text-sm font-semibold text-white">{dateLabel}</span>
           <input type="date" value={selectedDate} max={today}
             onChange={e => e.target.value && setSelectedDate(e.target.value)}
             className="opacity-0 absolute w-0 h-0" />
         </label>
         <button onClick={() => navDate(+1)} disabled={isToday}
-          className={`p-2 rounded-xl bg-elevated active:bg-border ${isToday ? 'opacity-30' : ''}`}>
-          <ChevronRight size={16} className="text-gray-300" />
+          className={`w-11 h-11 flex items-center justify-center rounded-2xl bg-elevated active:bg-border transition-colors ${isToday ? 'opacity-30' : ''}`}>
+          <ChevronRight size={20} className="text-gray-300" />
         </button>
       </div>
       {!isToday && (
@@ -381,7 +386,7 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
         <input type="text" placeholder="The hardest, most impactful thing you must do today..."
           value={form.big_rock || ''}
           onChange={e => set('big_rock', e.target.value)}
-          className="w-full bg-elevated rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
+          className="w-full bg-elevated rounded-2xl px-4 py-3.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
         <p className="text-[10px] text-gray-600 mt-1">Eat That Frog — the frog you must eat before anything else.</p>
       </div>
 
@@ -401,13 +406,13 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
             <label className="text-xs text-gray-400 block mb-1">🛏️ Bed time (last night)</label>
             <input type="time" value={form.bed_time || ''}
               onChange={e => set('bed_time', e.target.value)}
-              className="w-full bg-elevated rounded-xl px-2 py-2.5 text-sm text-white outline-none focus:ring-1 focus:ring-accent" />
+              className="w-full bg-elevated rounded-2xl px-3 py-3.5 text-sm text-white outline-none focus:ring-1 focus:ring-accent" />
           </div>
           <div>
             <label className="text-xs text-gray-400 block mb-1">⏰ Wake time</label>
             <input type="time" value={form.wake_time || ''}
               onChange={e => set('wake_time', e.target.value)}
-              className="w-full bg-elevated rounded-xl px-2 py-2.5 text-sm text-white outline-none focus:ring-1 focus:ring-accent" />
+              className="w-full bg-elevated rounded-2xl px-3 py-3.5 text-sm text-white outline-none focus:ring-1 focus:ring-accent" />
           </div>
         </div>
         {form.sleep_hours && (
@@ -436,7 +441,7 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
           <input type="number" inputMode="decimal" value={form.weight_kg || ''}
             onChange={e => set('weight_kg', e.target.value ? +e.target.value : '')}
             placeholder="—"
-            className="w-20 bg-elevated rounded-xl px-2 py-1.5 text-sm text-white text-center outline-none focus:ring-1 focus:ring-accent" />
+            className="w-24 bg-elevated rounded-2xl px-3 py-3 text-sm text-white text-center outline-none focus:ring-1 focus:ring-accent" />
         </div>
 
         {/* Scores */}
@@ -467,7 +472,7 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
           <input type="text" placeholder="e.g. SIP deducted, saved ₹500, read one chapter..."
             value={form.abundance_note || ''}
             onChange={e => set('abundance_note', e.target.value)}
-            className="w-full bg-elevated rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
+            className="w-full bg-elevated rounded-2xl px-4 py-3.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
         </div>
         <p className="text-[10px] text-gray-600">Log big financial decisions or events in Journal → Wealth category</p>
       </Section>
@@ -491,7 +496,7 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
           <input type="text" placeholder="e.g. Grateful for Mom because she called and listened..."
             value={form.family_gratitude || ''}
             onChange={e => set('family_gratitude', e.target.value)}
-            className="w-full bg-elevated rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
+            className="w-full bg-elevated rounded-2xl px-4 py-3.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
         </div>
       </Section>
 
@@ -529,12 +534,12 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
           <input type="text" placeholder="One specific win from today..."
             value={form.daily_win || ''}
             onChange={e => set('daily_win', e.target.value)}
-            className="w-full bg-elevated rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
+            className="w-full bg-elevated rounded-2xl px-4 py-3.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
         </div>
         <Toggle label="Wrote in my physical diary" emoji="📓" field="diary_done" value={form.diary_done} onChange={set} />
       </Section>
 
-      <button onClick={handleSave} className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base">
+      <button onClick={handleSave} className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base rounded-3xl">
         {saved ? <><Check size={18} /> Saved!</> : <><Save size={18} /> Save {isToday ? "Today's" : dateLabel} Log</>}
       </button>
     </div>

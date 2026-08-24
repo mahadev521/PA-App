@@ -40,7 +40,7 @@ function AddForm({ onSave, onClose }) {
         onChange={e => setTitle(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && submit()}
         autoFocus
-        className="w-full bg-elevated rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent"
+        className="w-full bg-elevated rounded-2xl px-4 py-3.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent"
       />
 
       <div>
@@ -48,7 +48,7 @@ function AddForm({ onSave, onClose }) {
         <div className="flex gap-1.5">
           {SEVERITY.map(s => (
             <button key={s.key} onClick={() => setSeverity(s.key)}
-              className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
+              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
                 severity === s.key ? s.color : 'bg-elevated border-border text-gray-500'
               }`}>
               {s.emoji}<br />{s.label}
@@ -62,7 +62,7 @@ function AddForm({ onSave, onClose }) {
         <div className="flex gap-1.5">
           {PRIORITY.map(p => (
             <button key={p.key} onClick={() => setPriority(p.key)}
-              className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
+              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
                 priority === p.key ? 'bg-accent/20 border-accent text-white' : 'bg-elevated border-border text-gray-500'
               }`}>
               {p.label}<br />
@@ -98,11 +98,11 @@ function TaskRow({ task, isFrog, onToggle, onDelete }) {
     }`}>
       <button
         onClick={() => onToggle(task.id)}
-        className={`w-5 h-5 mt-0.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+        className={`w-8 h-8 mt-0.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all active:scale-90 ${
           task.completed ? 'bg-emerald border-emerald' : 'border-gray-500'
         }`}
       >
-        {task.completed && <Check size={10} className="text-white" />}
+        {task.completed && <Check size={13} className="text-white" strokeWidth={3} />}
       </button>
 
       <div className="flex-1 min-w-0">
@@ -120,8 +120,8 @@ function TaskRow({ task, isFrog, onToggle, onDelete }) {
         </div>
       </div>
 
-      <button onClick={() => onDelete(task.id)} className="p-1 text-gray-600 active:text-rose flex-shrink-0 mt-0.5">
-        <Trash2 size={12} />
+      <button onClick={() => onDelete(task.id)} className="w-10 h-10 flex items-center justify-center text-gray-600 active:text-rose flex-shrink-0 rounded-xl">
+        <Trash2 size={16} />
       </button>
     </div>
   )
