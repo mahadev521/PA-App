@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Check, Plus, Trash2, RefreshCw, ChevronLeft, RotateCcw, X } from 'lucide-react'
+import { Check, Plus, Trash2, RefreshCw, ChevronLeft, ChevronUp, ChevronDown, RotateCcw, X } from 'lucide-react'
 
 // ─── Built-in checklist templates ────────────────────────────────
 
