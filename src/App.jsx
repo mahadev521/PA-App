@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import BottomNav      from './components/layout/BottomNav'
+import { useState, useRef } from 'react'
 import HomeScreen     from './components/screens/HomeScreen'
 import DailyScreen    from './components/screens/DailyScreen'
 import LifeScreen     from './components/screens/LifeScreen'
@@ -8,9 +7,28 @@ import OnboardingScreen from './components/screens/OnboardingScreen'
 import UtilitiesScreen from './components/screens/UtilitiesScreen'
 import { useApp } from './hooks/useApp'
 
+const TABS = ['home', 'daily', 'utilities', 'life']
+
 export default function App() {
   const [tab, setTab] = useState('home')
   const app = useApp()
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+
+  function handleTouchStart(e) {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  function handleTouchEnd(e) {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    // Only treat as horizontal swipe if mostly horizontal and long enough
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return
+    const idx = TABS.indexOf(tab)
+    if (dx < 0 && idx < TABS.length - 1) setTab(TABS[idx + 1])  // swipe left → next
+    if (dx > 0 && idx > 0)              setTab(TABS[idx - 1])  // swipe right → prev
+  }
 
   if (app.loading) {
     return (
@@ -103,11 +121,15 @@ export default function App() {
   }
 
   return (
-    <div className="bg-base flex flex-col" style={{ flex: 1, overflow: 'hidden' }}>
+    <div
+      className="bg-base flex flex-col"
+      style={{ flex: 1, overflow: 'hidden' }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <div key={tab} className="page-enter flex-1 overflow-y-auto">
         {renderScreen()}
       </div>
-      <BottomNav active={tab} onChange={setTab} />
     </div>
   )
 }
