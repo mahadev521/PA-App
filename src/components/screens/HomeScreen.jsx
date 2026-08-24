@@ -196,7 +196,7 @@ function DailyChallenge({ todayEntry, onSave }) {
 
       <button
         onClick={toggle}
-        className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${
+        className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-[15px] transition-all active:scale-95 ${
           done
             ? 'bg-emerald/20 border border-emerald text-emerald'
             : 'bg-accent/20 border border-accent/40 text-accent hover:bg-accent/30'
@@ -287,7 +287,7 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
             <span>{levelInfo.xpInLevel} / {levelInfo.rangeSize || '∞'} XP</span>
             <span>{Math.round(levelInfo.progress * 100)}% to next</span>
           </div>
-          <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <div className="h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
             <div className="h-full rounded-full xp-bar-fill" style={{ width: `${Math.round(levelInfo.progress * 100)}%` }} />
           </div>
         </div>

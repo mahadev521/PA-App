@@ -129,8 +129,10 @@
   /* ── Buttons ────────────────────────────────────────────── */
   .btn-primary {
     background: linear-gradient(135deg, #7c3aed, #6d28d9);
-    @apply text-white font-semibold px-6 py-3 rounded-3xl transition-all active:scale-[0.97] text-sm;
-    min-height: 44px;
+    @apply text-white font-semibold px-6 py-3.5 rounded-3xl transition-all active:scale-[0.97];
+    font-size: 15px;
+    min-height: 48px;
+    letter-spacing: 0.01em;
     box-shadow: 0 4px 20px rgba(124, 58, 237, 0.40), inset 0 1px 0 rgba(255,255,255,0.15);
   }
   .btn-primary:hover { box-shadow: 0 6px 28px rgba(124, 58, 237, 0.55); }
@@ -138,8 +140,9 @@
   .btn-ghost {
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.09);
-    @apply text-white font-medium px-4 py-3 rounded-2xl transition-all active:scale-[0.97] text-sm;
-    min-height: 44px;
+    @apply text-white font-medium px-5 py-3.5 rounded-2xl transition-all active:scale-[0.97];
+    font-size: 15px;
+    min-height: 48px;
     backdrop-filter: blur(12px);
   }
 

@@ -75,7 +75,7 @@ function SliderRow({ label, emoji, field, value, onChange, min = 0, max, step = 
 }
 
 function ScoreRow({ label, emoji, field, value, onChange }) {
-  const cls = n => `flex-1 h-11 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+  const cls = n => `flex-1 h-12 rounded-xl text-base font-bold transition-all active:scale-95 ${
     value >= n
       ? n <= 4 ? 'bg-rose text-white' : n <= 7 ? 'bg-gold text-black' : 'bg-emerald text-black'
       : 'bg-border text-gray-500'
@@ -245,12 +245,12 @@ function MealRow({ form, onChange }) {
       <div className="flex gap-2">
         {meals.map(m => (
           <button key={m.key} onClick={() => onChange(m.key, !form[m.key])}
-            className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl border transition-all ${
+            className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${
               form[m.key] ? 'bg-emerald/10 border-emerald text-emerald' : 'bg-elevated border-border text-gray-500'
             }`}>
-            <span className="text-lg">{m.emoji}</span>
-            <span className="text-[11px] font-semibold">{m.label}</span>
-            <span className="text-[9px] opacity-60">{m.time}</span>
+            <span className="text-xl">{m.emoji}</span>
+            <span className="text-[12px] font-semibold">{m.label}</span>
+            <span className="text-[10px] opacity-60">{m.time}</span>
           </button>
         ))}
       </div>
@@ -271,7 +271,7 @@ function WaterBar({ value, onChange }) {
       <div className="flex gap-1.5 flex-wrap">
         {glasses.map(g => (
           <button key={g} onClick={() => onChange('water_liters', g)}
-            className={`h-11 flex-1 min-w-[36px] rounded-xl text-xs font-bold border transition-all active:scale-95 ${
+            className={`h-10 flex-1 min-w-[32px] rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${
               value >= g ? 'bg-sky/20 border-sky text-sky' : 'bg-elevated border-border text-gray-600'
             }`}>{g}</button>
         ))}

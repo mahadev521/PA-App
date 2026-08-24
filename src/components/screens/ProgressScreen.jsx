@@ -68,7 +68,7 @@ export default function ProgressScreen({ levelInfo, streaks, earnedBadges, total
               <span>{levelInfo.xpInLevel} / {levelInfo.rangeSize || '∞'} XP</span>
               <span>{Math.round(levelInfo.progress * 100)}% to next</span>
             </div>
-            <div className="h-3 bg-black/40 rounded-full overflow-hidden">
+            <div className="h-3.5 bg-black/40 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-accent to-accent-light rounded-full xp-bar-fill"
                 style={{ width: `${Math.round(levelInfo.progress * 100)}%` }}
@@ -115,7 +115,7 @@ export default function ProgressScreen({ levelInfo, streaks, earnedBadges, total
             <button
               key={cat}
               onClick={() => setActiveFilter(cat)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+              className={`flex-shrink-0 px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all ${
                 activeFilter === cat ? 'bg-accent text-white' : 'bg-elevated text-gray-400'
               }`}
             >

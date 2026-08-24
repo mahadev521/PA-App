@@ -161,7 +161,7 @@ function RitualSection({ title, emoji, items, rituals, onToggle, quote, completi
               {open ? <ChevronUp size={13} className="text-gray-500" /> : <ChevronDown size={13} className="text-gray-500" />}
             </div>
           </div>
-          <div className="h-1.5 bg-border rounded-full overflow-hidden">
+          <div className="h-2 bg-border rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-emerald' : 'bg-accent'}`}
               style={{ width: `${pct}%` }} />
           </div>
@@ -228,7 +228,7 @@ export default function RitualScreen({ todayEntry, onSave, embedded = false }) {
           <span className="text-sm font-semibold text-white">Today's completion</span>
           <span className={`text-lg font-black ${overallPct === 100 ? 'text-emerald' : 'text-accent'}`}>{overallPct}%</span>
         </div>
-        <div className="h-3 bg-border rounded-full overflow-hidden">
+        <div className="h-3.5 bg-border rounded-full overflow-hidden">
           <div className={`h-full rounded-full transition-all duration-700 ${overallPct === 100 ? 'bg-emerald' : 'bg-gradient-to-r from-accent to-accent-light'}`}
             style={{ width: `${overallPct}%` }} />
         </div>
