@@ -34,11 +34,10 @@ const TABS = [
 export default function BottomNav({ active, onChange }) {
   return (
     <nav
-      className="w-full flex-shrink-0 px-4"
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 px-4"
       style={{
-        paddingBottom: 'calc(0.4rem + env(safe-area-inset-bottom, 0px))',
+        paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
         paddingTop: '0.5rem',
-        background: '#090b1a',
       }}
     >
       <div

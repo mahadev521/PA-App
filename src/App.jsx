@@ -107,7 +107,8 @@ export default function App() {
       className="bg-base flex flex-col"
       style={{ flex: 1, overflow: 'hidden' }}
     >
-      <div key={tab} className="page-enter flex-1 overflow-y-auto">
+      <div key={tab} className="page-enter flex-1 overflow-y-auto"
+        style={{ paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' }}>
         {renderScreen()}
       </div>
       <BottomNav active={tab} onChange={setTab} />

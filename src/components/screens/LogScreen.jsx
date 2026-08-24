@@ -128,18 +128,18 @@ function NumberInput({ label, emoji, field, value, onChange, min = 0, max, step 
       <label className="text-sm text-gray-300">{emoji} {label}</label>
       <div className="flex items-center gap-2">
         <button onClick={() => onChange(field, Math.max(min, (value || 0) - step))}
-          className="w-12 h-12 rounded-2xl bg-border text-white font-bold flex items-center justify-center text-2xl leading-none active:scale-95 transition-transform">−</button>
+          className="w-10 h-10 rounded-xl bg-border text-white font-bold flex items-center justify-center text-xl leading-none active:scale-95 transition-transform">−</button>
         {editing ? (
           <input ref={inputRef} type="number" inputMode="numeric" value={value || 0}
             onChange={e => onChange(field, e.target.value === '' ? 0 : +e.target.value)}
             onBlur={() => setEditing(false)}
-            className="w-16 text-center font-bold text-white bg-elevated rounded-2xl py-2.5 outline-none focus:ring-1 focus:ring-accent text-base" />
+            className="w-14 text-center font-bold text-white bg-elevated rounded-xl py-1.5 outline-none focus:ring-1 focus:ring-accent text-sm" />
         ) : (
           <button onClick={() => { setEditing(true); setTimeout(() => inputRef.current?.select(), 30) }}
-            className="w-16 text-center font-bold text-white py-2.5 bg-elevated rounded-2xl text-base">{value || 0}</button>
+            className="w-14 text-center font-bold text-white py-1.5 bg-elevated rounded-xl text-sm">{value || 0}</button>
         )}
         <button onClick={() => onChange(field, Math.min(max ?? 99999, (value || 0) + step))}
-          className="w-12 h-12 rounded-2xl bg-border text-white font-bold flex items-center justify-center text-2xl leading-none active:scale-95 transition-transform">+</button>
+          className="w-10 h-10 rounded-xl bg-border text-white font-bold flex items-center justify-center text-xl leading-none active:scale-95 transition-transform">+</button>
       </div>
     </div>
   )
@@ -216,8 +216,8 @@ function Section({ title, emoji, children, defaultOpen = true, quoteKey }) {
   return (
     <div className="card space-y-3">
       <button onClick={() => setOpen(o => !o)} className="flex items-center justify-between w-full min-h-[44px] py-1">
-        <span className="font-semibold text-white flex items-center gap-2 text-base">{emoji} {title}</span>
-        {open ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
+        <span className="font-semibold text-white flex items-center gap-2 text-sm">{emoji} {title}</span>
+        {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </button>
       {open && (
         <>

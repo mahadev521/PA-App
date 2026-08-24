@@ -26,53 +26,72 @@ function calcScores(e) {
   }
 }
 
-// ─── Week tracker: Mon–Sun dots ──────────────────────────────────
+// ─── Month tracker: full calendar grid ───────────────────────────
 
-function getWeekDates() {
-  const today = new Date()
-  const dow = today.getDay()
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
-  const labels = ['M','T','W','T','F','S','S']
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + i)
-    return {
-      date: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,
-      label: labels[i],
-      isWeekend: i >= 5,
-    }
-  })
+function getMonthCells() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7 // Mon=0
+  const pad = d => String(d).padStart(2, '0')
+  const cells = Array(firstDow).fill(null)
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ date: `${year}-${pad(month + 1)}-${pad(d)}`, day: d })
+  }
+  return cells
 }
 
-function WeekTracker({ entries }) {
+function MonthTracker({ entries }) {
   const today = todayStr()
   const byDate = Object.fromEntries(entries.map(e => [e.date, e]))
-  const days = useMemo(() => getWeekDates(), [])
+  const cells = useMemo(() => getMonthCells(), [])
+
+  const pastCells = cells.filter(c => c && c.date <= today)
+  const loggedCount = pastCells.filter(c => byDate[c.date]).length
+  const pct = pastCells.length ? Math.round((loggedCount / pastCells.length) * 100) : 0
+  const monthName = new Date().toLocaleDateString('en-US', { month: 'long' })
 
   return (
     <div className="card">
-      <p className="section-title mb-2">This week</p>
-      <div className="flex justify-between">
-        {days.map(({ date, label, isWeekend }) => {
-          const entry = byDate[date]
+      <div className="flex items-center justify-between mb-2.5">
+        <p className="section-title mb-0">{monthName}</p>
+        <span className="text-xs font-bold" style={{
+          color: pct >= 80 ? '#10b981' : pct >= 50 ? '#a78bfa' : 'rgba(240,244,255,0.45)',
+        }}>
+          {loggedCount}/{pastCells.length} days · {pct}%
+        </span>
+      </div>
+
+      <div className="grid grid-cols-7 gap-0.5 mb-1">
+        {['M','T','W','T','F','S','S'].map((l, i) => (
+          <div key={i} className="text-center text-[10px] font-semibold py-0.5"
+            style={{ color: i >= 5 ? 'rgba(167,139,250,0.5)' : 'rgba(240,244,255,0.28)' }}>{l}</div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-0.5">
+        {cells.map((cell, i) => {
+          if (!cell) return <div key={`pad-${i}`} className="aspect-square" />
+          const { date, day } = cell
           const isToday = date === today
           const isFuture = date > today
-          const logged = !!entry
+          const logged = !!byDate[date]
 
-          let bg, border, textCol
-          if (isToday)       { bg = 'rgba(124,58,237,0.25)'; border = '1.5px solid rgba(167,139,250,0.6)'; textCol = '#a78bfa' }
-          else if (logged)   { bg = 'rgba(16,185,129,0.18)'; border = '1px solid rgba(16,185,129,0.35)';  textCol = '#10b981' }
-          else if (isFuture) { bg = 'rgba(255,255,255,0.04)'; border = '1px solid rgba(255,255,255,0.06)'; textCol = 'rgba(240,244,255,0.2)' }
-          else               { bg = 'rgba(244,63,94,0.12)'; border = '1px solid rgba(244,63,94,0.20)';   textCol = 'rgba(244,63,94,0.6)' }
+          let bg, textColor, borderStyle
+          if (isToday && logged)  { bg = 'rgba(124,58,237,0.35)'; textColor = '#c4b5fd'; borderStyle = '1.5px solid rgba(167,139,250,0.7)' }
+          else if (isToday)       { bg = 'rgba(124,58,237,0.18)'; textColor = '#a78bfa'; borderStyle = '1.5px solid rgba(167,139,250,0.6)' }
+          else if (logged)        { bg = 'rgba(16,185,129,0.22)'; textColor = '#6ee7b7'; borderStyle = '1px solid rgba(16,185,129,0.35)' }
+          else if (isFuture)      { bg = 'rgba(255,255,255,0.03)'; textColor = 'rgba(240,244,255,0.18)'; borderStyle = '1px solid rgba(255,255,255,0.05)' }
+          else                    { bg = 'rgba(244,63,94,0.10)'; textColor = 'rgba(244,63,94,0.55)'; borderStyle = '1px solid rgba(244,63,94,0.15)' }
 
           return (
-            <div key={date} className="flex flex-col items-center gap-1.5">
-              <span className="text-[10px] font-medium" style={{ color: isWeekend ? 'rgba(167,139,250,0.5)' : 'rgba(240,244,255,0.35)' }}>{label}</span>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all" style={{ background: bg, border }}>
-                {logged && !isFuture ? <Check size={15} style={{ color: textCol }} strokeWidth={2.5} /> : null}
-                {isToday && !logged ? <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#a78bfa' }} /> : null}
-              </div>
+            <div key={date} className="aspect-square rounded-lg flex items-center justify-center transition-all"
+              style={{ background: bg, border: borderStyle }}>
+              {logged && !isFuture
+                ? <Check size={11} strokeWidth={2.8} style={{ color: isToday ? '#c4b5fd' : '#6ee7b7' }} />
+                : <span className="text-[11px] font-semibold leading-none" style={{ color: textColor }}>{day}</span>
+              }
             </div>
           )
         })}
@@ -274,8 +293,8 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
         </div>
       </button>
 
-      {/* Week Tracker */}
-      <WeekTracker entries={entries || []} />
+      {/* Month Tracker */}
+      <MonthTracker entries={entries || []} />
 
       {/* Time Pulse */}
       <TimePulse />
