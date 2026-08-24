@@ -215,8 +215,8 @@ function Section({ title, emoji, children, defaultOpen = true, quoteKey }) {
   const quote = quoteKey && QUOTES[quoteKey] ? getDailyQuote(QUOTES[quoteKey], quoteKey) : null
   return (
     <div className="card space-y-3">
-      <button onClick={() => setOpen(o => !o)} className="flex items-center justify-between w-full min-h-[44px] py-1">
-        <span className="font-semibold text-white flex items-center gap-2 text-sm">{emoji} {title}</span>
+      <button onClick={() => setOpen(o => !o)} className="flex items-center justify-between w-full min-h-[48px] py-1.5">
+        <span className="font-bold text-white flex items-center gap-2.5 text-[15px]">{emoji} {title}</span>
         {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </button>
       {open && (

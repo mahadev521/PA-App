@@ -480,7 +480,7 @@ export default function UtilitiesScreen({
             background: 'rgba(9,11,26,0.95)',
             backdropFilter: 'blur(12px)',
           }}>
-          <h1 className="text-lg font-bold text-white">Utilities</h1>
+          <h1 className="text-2xl font-black text-white">Tools</h1>
           <p className="text-xs text-gray-500 mt-0.5">Your personal toolkit</p>
         </div>
 
@@ -492,20 +492,20 @@ export default function UtilitiesScreen({
                 <button
                   key={u.id}
                   onClick={() => setActiveUtility(u.id)}
-                  className="flex flex-col items-start p-4 rounded-2xl text-left transition-all active:scale-95"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className="flex flex-col items-start p-4 rounded-3xl text-left transition-all active:scale-95"
+                  style={{ background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}
                 >
-                  <div className="flex w-full items-start justify-between mb-2">
-                    <span className="text-2xl leading-none">{u.emoji}</span>
+                  <div className="flex w-full items-start justify-between mb-3">
+                    <span className="text-3xl leading-none">{u.emoji}</span>
                     {cnt > 0 && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{ background: 'rgba(124,58,237,0.3)', color: '#a78bfa' }}>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(124,58,237,0.25)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.25)' }}>
                         {cnt}
                       </span>
                     )}
                   </div>
-                  <p className="text-sm font-semibold text-white leading-tight">{u.title}</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5 leading-tight">{u.desc}</p>
+                  <p className="text-sm font-bold text-white leading-tight">{u.title}</p>
+                  <p className="text-[11px] text-gray-500 mt-1 leading-tight">{u.desc}</p>
                 </button>
               )
             })}

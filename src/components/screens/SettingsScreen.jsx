@@ -33,24 +33,26 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload }) {
 
   return (
     <div className="screen space-y-5 animate-fade-in">
-      <h1 className="text-xl font-bold text-white">Profile</h1>
+      <h1 className="text-2xl font-black text-white">Settings</h1>
 
       {/* Name */}
       <div className="card space-y-3">
         <p className="section-title">Your name</p>
-        <div className="flex gap-2">
-          <div className="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center flex-shrink-0">
-            <User size={18} className="text-accent" />
+        <div className="flex gap-3 items-center">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 text-lg font-black"
+            style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)', color: '#fff' }}>
+            {name.trim() ? name.trim()[0].toUpperCase() : '?'}
           </div>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Enter your name"
-            className="flex-1 bg-elevated rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent"
+            className="flex-1 rounded-2xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </div>
-        <button onClick={handleSaveName} className="btn-primary w-full text-sm py-2.5">
+        <button onClick={handleSaveName} className="btn-primary w-full">
           {saved ? '✓ Saved' : 'Save Name'}
         </button>
       </div>

@@ -78,25 +78,23 @@ export default function ProgressScreen({ levelInfo, streaks, earnedBadges, total
         </div>
       </div>
 
-      {/* Streaks Grid */}
+      {/* Streaks */}
       <div>
         <p className="section-title">Streaks</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
           {streaks.map(s => (
-            <div
-              key={s.key}
-              className={`bg-elevated rounded-2xl p-3 border ${s.current > 0 ? 'border-accent/20' : 'border-border'}`}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-lg">{s.emoji}</span>
-                <span className={`text-xs font-medium ${s.current > 0 ? 'text-emerald' : 'text-gray-600'}`}>
-                  best: {s.best}d
-                </span>
+            <div key={s.key}
+              className={`flex-shrink-0 flex flex-col items-center gap-2 w-[88px] py-4 px-2 rounded-2xl border transition-all ${
+                s.current > 0 ? 'border-accent/25 bg-accent/5' : 'border-border bg-elevated opacity-40'
+              }`}>
+              <span className="text-2xl leading-none">{s.emoji}</span>
+              <div className={`text-2xl font-black leading-none ${s.current > 0 ? 'text-white' : 'text-gray-600'}`}>
+                {s.current}<span className="text-sm text-gray-500 font-normal">d</span>
               </div>
-              <div className={`text-2xl font-black ${s.current > 0 ? 'text-white' : 'text-gray-600'}`}>
-                {s.current}d
-              </div>
-              <div className="text-[11px] text-gray-400">{s.label}</div>
+              <div className="text-[10px] text-gray-400 text-center leading-tight px-1">{s.label}</div>
+              {s.best > 0 && (
+                <div className="text-[9px] font-semibold" style={{ color: 'rgba(240,244,255,0.25)' }}>Best {s.best}d</div>
+              )}
             </div>
           ))}
         </div>

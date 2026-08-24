@@ -1,19 +1,9 @@
 import { useMemo } from 'react'
 import { Zap, Plus, Check, Settings } from 'lucide-react'
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts'
 import { todayStr } from '../../utils/gamification'
 import { getDailyChallenge, getTimePulse, getWiseGreeting } from '../../utils/challenges'
 import { getSmartInsights } from '../../utils/analytics'
 
-// ─── Direction scores from today's entry ─────────────────────────
-
-const DIRECTIONS = [
-  { key: 'god',    label: 'God',    emoji: '🕊️', color: 'bg-yellow-400' },
-  { key: 'health', label: 'Health', emoji: '💪',  color: 'bg-sky-400'    },
-  { key: 'wealth', label: 'Wealth', emoji: '💰',  color: 'bg-emerald-400'},
-  { key: 'family', label: 'Family', emoji: '❤️',  color: 'bg-pink-400'   },
-  { key: 'pro',    label: 'Work',   emoji: '💼',  color: 'bg-indigo-400' },
-]
 
 function calcScores(e) {
   if (!e) return { god: 0, health: 0, wealth: 0, family: 0, pro: 0 }
@@ -102,22 +92,11 @@ function MonthTracker({ entries }) {
 
 function StatPill({ emoji, label, value, color = 'text-white' }) {
   return (
-    <div className="bg-elevated rounded-2xl p-4 flex flex-col gap-1.5">
-      <span className="text-xl">{emoji}</span>
-      <span className={`text-2xl font-bold ${color}`}>{value ?? '—'}</span>
-      <span className="text-xs text-gray-400">{label}</span>
-    </div>
-  )
-}
-
-function StreakPill({ emoji, label, count }) {
-  return (
-    <div className={`flex items-center gap-3 bg-elevated rounded-2xl px-4 py-3.5 ${count > 0 ? '' : 'opacity-40'}`}>
-      <span className="text-xl">{emoji}</span>
-      <div>
-        <div className="text-base font-bold text-white">{count}d</div>
-        <div className="text-xs text-gray-400">{label}</div>
-      </div>
+    <div className="flex flex-col gap-1.5 p-3.5 rounded-2xl"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+      <span className="text-xl leading-none">{emoji}</span>
+      <span className={`text-xl font-black leading-none ${value ? color : 'text-gray-600'}`}>{value ?? '—'}</span>
+      <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
     </div>
   )
 }
@@ -212,103 +191,146 @@ function DailyChallenge({ todayEntry, onSave }) {
   )
 }
 
+// ─── Life direction score bars ────────────────────────────────────
+
+function DirectionScores({ scores, todayEntry }) {
+  const dirs = [
+    { key: 'god',    emoji: '🕊️', label: 'God',    color: '#fbbf24' },
+    { key: 'health', emoji: '💪',  label: 'Health', color: '#06b6d4' },
+    { key: 'wealth', emoji: '💰',  label: 'Wealth', color: '#10b981' },
+    { key: 'family', emoji: '❤️',  label: 'Family', color: '#f472b6' },
+    { key: 'pro',    emoji: '💼',  label: 'Work',   color: '#818cf8' },
+  ]
+  const logged = !!todayEntry
+  const avg = logged
+    ? Math.round(dirs.reduce((s, d) => s + (scores[d.key] || 0), 0) / dirs.length)
+    : 0
+
+  return (
+    <div className="card">
+      <div className="flex items-center justify-between mb-4">
+        <p className="section-title mb-0">Life Score Today</p>
+        <span className="text-xs font-black px-2.5 py-1 rounded-xl" style={{
+          background: !logged ? 'rgba(255,255,255,0.05)' : avg >= 70 ? 'rgba(16,185,129,0.15)' : avg >= 40 ? 'rgba(124,58,237,0.15)' : 'rgba(244,63,94,0.12)',
+          color:      !logged ? 'rgba(240,244,255,0.28)' : avg >= 70 ? '#10b981'                : avg >= 40 ? '#a78bfa'               : '#f43f5e',
+        }}>
+          {logged ? `${avg}/100` : 'Log today'}
+        </span>
+      </div>
+      <div className="space-y-2.5">
+        {dirs.map(d => (
+          <div key={d.key} className="flex items-center gap-3">
+            <span className="text-sm leading-none w-5 text-center flex-shrink-0">{d.emoji}</span>
+            <span className="text-[11px] font-semibold w-11 flex-shrink-0"
+              style={{ color: 'rgba(240,244,255,0.45)' }}>{d.label}</span>
+            <div className="flex-1 h-2.5 rounded-full overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.07)' }}>
+              <div className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${scores[d.key] || 0}%`,
+                  background: logged ? `linear-gradient(90deg, ${d.color}aa, ${d.color})` : 'rgba(255,255,255,0.08)',
+                  boxShadow: logged && (scores[d.key] || 0) > 0 ? `0 0 8px ${d.color}55` : 'none',
+                }} />
+            </div>
+            <span className="text-xs font-black w-6 text-right flex-shrink-0" style={{
+              color: (scores[d.key] || 0) >= 60 ? d.color : 'rgba(240,244,255,0.32)',
+            }}>
+              {scores[d.key] || 0}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Screen ───────────────────────────────────────────────────────
 
 export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, logStreak, onNavigate, profile, onSave, entries }) {
   const greeting = useMemo(() => getWiseGreeting(profile?.name), [profile])
   const scores = calcScores(todayEntry)
-  const topStreaks = streaks.slice(0, 4)
+  const activeStreaks = streaks.filter(s => s.current > 0).slice(0, 5)
   const insights = useMemo(() => getSmartInsights(entries || [], streaks), [entries, streaks])
 
-  const radarData = DIRECTIONS.map(d => ({ direction: d.label, score: scores[d.key], fullMark: 100 }))
-  const firstName = profile?.name?.split(' ')[0] || ''
-
   return (
-    <div className="screen space-y-5 animate-fade-in">
+    <div className="screen space-y-4 animate-fade-in">
 
-      {/* Personal creed — always first, always visible */}
-      <div
-        className="rounded-3xl px-5 py-5 space-y-3"
-        style={{
-          background: 'linear-gradient(135deg, rgba(124,58,237,0.22) 0%, rgba(9,11,26,0.6) 100%)',
-          border: '1px solid rgba(167,139,250,0.25)',
-          boxShadow: '0 0 40px rgba(124,58,237,0.12)',
-        }}
-      >
-        <p
-          className="text-base font-bold leading-snug"
-          style={{ color: '#e2d9ff', letterSpacing: '-0.01em' }}
-        >
-          "If you have something left for you to do, you have no right of thinking about anything else."
-        </p>
-        <div className="h-px" style={{ background: 'rgba(167,139,250,0.2)' }} />
-        <p
-          className="text-sm font-semibold"
-          style={{ color: 'rgba(167,139,250,0.85)' }}
-        >
-          → What do you have to do next?
-        </p>
-      </div>
-
-      {/* Header: greeting + settings */}
+      {/* ── Header ──────────────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div className="flex-1 pr-3">
-          <p className="text-xs mb-0.5" style={{ color: 'rgba(240,244,255,0.38)' }}>
-            {new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}
+          <p className="text-[11px] font-medium mb-0.5" style={{ color: 'rgba(240,244,255,0.30)' }}>
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
-          <p className="text-base font-semibold text-white leading-snug">{greeting}</p>
+          <h1 className="text-[22px] font-black text-white leading-tight">{greeting}</h1>
         </div>
-        <button onClick={() => onNavigate('settings')} className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)' }}>
-          <Settings size={18} style={{ color: 'rgba(240,244,255,0.55)' }} />
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+          {todayXP > 0 && (
+            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl"
+              style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.22)' }}>
+              <Zap size={11} style={{ color: '#f59e0b' }} />
+              <span className="text-xs font-black text-gold">+{todayXP}</span>
+            </div>
+          )}
+          <button onClick={() => onNavigate('settings')}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <Settings size={16} style={{ color: 'rgba(240,244,255,0.5)' }} />
+          </button>
+        </div>
       </div>
 
-      {/* Level + XP — tappable → Progress */}
-      <button className="card-elevated glow-accent space-y-3 w-full text-left active:scale-[0.98] transition-transform"
+      {/* ── Level / XP ──────────────────────────────────────────── */}
+      <button className="card-elevated glow-accent w-full text-left active:scale-[0.99] transition-transform"
         onClick={() => onNavigate('life')}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between mb-3">
           <div>
-            <div className="text-xs uppercase tracking-widest" style={{ color: 'rgba(240,244,255,0.45)' }}>
-              Level {levelInfo.level} · Tap for details
-            </div>
-            <div className="text-xl font-bold gradient-text-accent">{levelInfo.emoji} {levelInfo.title}</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest mb-1"
+              style={{ color: 'rgba(167,139,250,0.55)' }}>Current Rank</div>
+            <div className="text-xl font-black gradient-text-accent">{levelInfo.emoji} {levelInfo.title}</div>
           </div>
           <div className="text-right">
-            <div className="text-xs" style={{ color: 'rgba(240,244,255,0.40)' }}>Today</div>
-            <div className="flex items-center gap-1">
-              <Zap size={14} className="text-gold" />
-              <span className="text-gold font-bold text-lg">+{todayXP} XP</span>
+            <div className="text-[10px] text-gray-500 mb-0.5">Level {levelInfo.level}</div>
+            <div className="text-sm font-black text-white">
+              {levelInfo.xpInLevel}
+              <span className="text-gray-500 font-normal text-xs"> / {levelInfo.rangeSize || '∞'}</span>
             </div>
           </div>
         </div>
-        <div>
-          <div className="flex justify-between text-xs mb-1.5" style={{ color: 'rgba(240,244,255,0.40)' }}>
-            <span>{levelInfo.xpInLevel} / {levelInfo.rangeSize || '∞'} XP</span>
-            <span>{Math.round(levelInfo.progress * 100)}% to next</span>
-          </div>
-          <div className="h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-            <div className="h-full rounded-full xp-bar-fill" style={{ width: `${Math.round(levelInfo.progress * 100)}%` }} />
-          </div>
+        <div className="h-3 rounded-full overflow-hidden mb-1.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <div className="h-full rounded-full xp-bar-fill" style={{ width: `${Math.round(levelInfo.progress * 100)}%` }} />
         </div>
+        <div className="flex justify-between text-[11px]" style={{ color: 'rgba(240,244,255,0.38)' }}>
+          <span>{Math.round(levelInfo.progress * 100)}% → Level {levelInfo.level + 1}</span>
+          {todayXP > 0 && <span className="text-gold font-semibold">+{todayXP} XP today</span>}
+        </div>
+        {activeStreaks.length > 0 && (
+          <div className="flex gap-4 mt-3.5 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+            {activeStreaks.map(s => (
+              <div key={s.key} className="flex items-center gap-1.5">
+                <span className="text-base leading-none">{s.emoji}</span>
+                <span className="text-xs font-black text-white">{s.current}<span className="text-gray-500 font-normal">d</span></span>
+              </div>
+            ))}
+          </div>
+        )}
       </button>
 
-      {/* Month Tracker */}
+      {/* ── Life Direction Scores ────────────────────────────────── */}
+      <DirectionScores scores={scores} todayEntry={todayEntry} />
+
+      {/* ── Month Tracker ────────────────────────────────────────── */}
       <MonthTracker entries={entries || []} />
 
-      {/* Time Pulse */}
-      <TimePulse />
-
-      {/* Smart Insights */}
+      {/* ── Brain Pulse Insights ─────────────────────────────────── */}
       {insights.length > 0 && (
         <div>
           <p className="section-title">🧠 Brain Pulse</p>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
             {insights.map((ins, i) => (
-              <div key={i} className={`flex-shrink-0 w-[280px] px-3.5 py-3 rounded-2xl border text-xs leading-relaxed ${
+              <div key={i} className={`flex-shrink-0 w-[270px] px-4 py-3.5 rounded-2xl border text-xs leading-relaxed ${
                 ins.type === 'warn' ? 'bg-rose/5 border-rose/20 text-gray-200' :
                 ins.type === 'pos'  ? 'bg-emerald/5 border-emerald/20 text-gray-200' :
-                'bg-accent/5 border-accent/20 text-gray-200'
+                                     'bg-accent/5 border-accent/20 text-gray-200'
               }`}>
                 <span className="mr-1">{ins.emoji}</span>{ins.text}
               </div>
@@ -317,57 +339,34 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
         </div>
       )}
 
-      {/* Daily Challenge */}
+      {/* ── Daily Challenge ──────────────────────────────────────── */}
       <DailyChallenge todayEntry={todayEntry} onSave={onSave} />
 
-      {/* Life Balance Radar */}
-      <div>
-        <p className="section-title">Life Balance</p>
-        <div className="card" style={{ height: 220 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
-              <PolarGrid stroke="rgba(255,255,255,0.07)" />
-              <PolarAngleAxis dataKey="direction"
-                tick={{ fill: 'rgba(240,244,255,0.50)', fontSize: 11, fontWeight: 600 }} />
-              <Radar dataKey="score" fill="#7c3aed" fillOpacity={0.22}
-                stroke="#a78bfa" strokeWidth={2}
-                dot={{ fill: '#a78bfa', r: 3 }} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      {/* ── Time Pulse ───────────────────────────────────────────── */}
+      <TimePulse />
 
-      {/* Today's Stats */}
+      {/* ── Today's Metrics ──────────────────────────────────────── */}
       <div>
-        <p className="section-title">Today's metrics</p>
+        <p className="section-title">Today's Metrics</p>
         {todayEntry ? (
           <div className="grid grid-cols-3 gap-2">
-            <StatPill emoji="🔥" label="Deep Work" value={todayEntry.deep_work_hours ? `${todayEntry.deep_work_hours}h` : null} color="text-orange-400" />
-            <StatPill emoji="😴" label="Sleep" value={todayEntry.sleep_hours ? `${todayEntry.sleep_hours}h` : null} color="text-sky" />
-            <StatPill emoji="⚡" label="Energy" value={todayEntry.energy_score ? `${todayEntry.energy_score}/10` : null} color="text-emerald" />
-            <StatPill emoji="📚" label="Learning" value={todayEntry.learning_minutes ? `${todayEntry.learning_minutes}m` : null} color="text-accent-light" />
-            <StatPill emoji="💧" label="Water" value={todayEntry.water_liters ? `${todayEntry.water_liters}L` : null} color="text-sky" />
-            <StatPill emoji="❤️" label="Family" value={todayEntry.family_time ? `${todayEntry.family_time}m` : null} color="text-pink-400" />
+            <StatPill emoji="🔥" label="Deep Work" value={todayEntry.deep_work_hours ? `${todayEntry.deep_work_hours}h`      : null} color="text-orange-400" />
+            <StatPill emoji="😴" label="Sleep"     value={todayEntry.sleep_hours      ? `${todayEntry.sleep_hours}h`          : null} color="text-sky" />
+            <StatPill emoji="⚡" label="Energy"    value={todayEntry.energy_score     ? `${todayEntry.energy_score}/10`       : null} color="text-emerald" />
+            <StatPill emoji="📚" label="Learning"  value={todayEntry.learning_minutes ? `${todayEntry.learning_minutes}m`     : null} color="text-accent-light" />
+            <StatPill emoji="💧" label="Water"     value={todayEntry.water_liters     ? `${todayEntry.water_liters}L`         : null} color="text-sky" />
+            <StatPill emoji="❤️" label="Family"    value={todayEntry.family_time      ? `${todayEntry.family_time}m`          : null} color="text-pink-400" />
           </div>
         ) : (
-          <div className="card border border-dashed flex flex-col items-center gap-3 py-8"
-            style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-            <p className="text-sm text-center" style={{ color: 'rgba(240,244,255,0.45)' }}>Nothing logged yet today.</p>
-            <button onClick={() => onNavigate('daily')} className="btn-primary flex items-center gap-2">
-              <Plus size={16} /> Log Today
+          <div className="card text-center py-7" style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <p className="text-3xl mb-3">📋</p>
+            <p className="text-sm font-bold text-white mb-1">Nothing logged today</p>
+            <p className="text-xs text-gray-500 mb-4">Track your day to see your life scores</p>
+            <button onClick={() => onNavigate('daily')} className="btn-primary inline-flex items-center gap-2 mx-auto">
+              <Plus size={15} /> Log Today
             </button>
           </div>
         )}
-      </div>
-
-      {/* Streaks */}
-      <div>
-        <p className="section-title">Active streaks</p>
-        <div className="grid grid-cols-2 gap-2">
-          {topStreaks.map(s => (
-            <StreakPill key={s.key} emoji={s.emoji} label={s.label} count={s.current} />
-          ))}
-        </div>
       </div>
 
     </div>

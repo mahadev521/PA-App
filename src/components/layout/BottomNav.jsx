@@ -18,14 +18,14 @@ const TABS = [
   {
     id: 'utilities',
     icon: Layers,
-    label: 'Utils',
+    label: 'Tools',
     from: '#d97706', to: '#b45309',
     glow: 'rgba(217,119,6,0.55)',
   },
   {
     id: 'life',
     icon: Compass,
-    label: 'Stats',
+    label: 'Progress',
     from: '#e11d48', to: '#be123c',
     glow: 'rgba(225,29,72,0.55)',
   },
