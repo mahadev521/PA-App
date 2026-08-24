@@ -203,7 +203,7 @@ export default function ExperienceScreen({ experiences, onAdd, onDelete, embedde
   return (
     <div
       className={embedded ? 'px-4 pb-24 space-y-4 animate-fade-in' : 'screen space-y-4 animate-fade-in'}
-      style={embedded ? { paddingTop: '1.25rem', paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))' } : {}}
+      style={embedded ? { paddingTop: '1.25rem', paddingBottom: '2rem' } : {}}
     >
       <div className="flex items-center justify-between">
         <div>

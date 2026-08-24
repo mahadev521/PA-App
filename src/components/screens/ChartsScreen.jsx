@@ -137,7 +137,7 @@ export default function ChartsScreen({ entries, embedded = false }) {
   return (
     <div
       className={`${embedded ? 'px-4 space-y-5 animate-fade-in' : 'screen space-y-5 animate-fade-in'}`}
-      style={embedded ? { paddingTop: '1.25rem', paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))' } : {}}
+      style={embedded ? { paddingTop: '1.25rem', paddingBottom: '2rem' } : {}}
     >
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white">Charts</h1>

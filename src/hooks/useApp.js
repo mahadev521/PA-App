@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getAllEntries, saveEntry, getProfile, saveProfile, getAllExperiences, saveExperience, deleteExperience, getAllTasks, saveTask, deleteTask, getAllGoTasks, saveGoTask, deleteGoTask, getAllBacklog, saveBacklogItem, deleteBacklogItem, getAllErrandRuns, saveErrandRun, deleteErrandRun, getAllUtilityItems, saveUtilityItem, deleteUtilityItem } from '../utils/storage'
+import { getAllEntries, saveEntry, getProfile, saveProfile, getAllExperiences, saveExperience, deleteExperience, getAllTasks, saveTask, deleteTask, getAllGoTasks, saveGoTask, deleteGoTask, getAllBacklog, saveBacklogItem, deleteBacklogItem, getAllErrandRuns, saveErrandRun, deleteErrandRun, getAllUtilityItems, saveUtilityItem, deleteUtilityItem, getAllChecklists, saveChecklist, deleteChecklist } from '../utils/storage'
 import {
   calculateDayXP,
   getLevelInfo,
@@ -16,14 +16,16 @@ export function useApp() {
   const [backlog, setBacklog] = useState([])
   const [errandRuns, setErrandRuns] = useState([])
   const [utilityItems, setUtilityItems] = useState([])
+  const [checklists, setChecklists] = useState([])
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [todayEntry, setTodayEntry] = useState(null)
 
   const reload = useCallback(async () => {
-    const [all, prof, exps, tsks, gts, bl, er, ui] = await Promise.all([
+    const [all, prof, exps, tsks, gts, bl, er, ui, cls] = await Promise.all([
       getAllEntries(), getProfile(), getAllExperiences(), getAllTasks(),
       getAllGoTasks(), getAllBacklog(), getAllErrandRuns(), getAllUtilityItems(),
+      getAllChecklists(),
     ])
     setEntries(all)
     setProfile(prof)
@@ -33,6 +35,7 @@ export function useApp() {
     setBacklog(bl)
     setErrandRuns(er)
     setUtilityItems(ui)
+    setChecklists(cls)
     const today = all.find(e => e.date === todayStr()) || null
     setTodayEntry(today)
     setLoading(false)
@@ -174,6 +177,16 @@ export function useApp() {
     setUtilityItems(await getAllUtilityItems())
   }, [])
 
+  const upsertChecklist = useCallback(async (checklist) => {
+    await saveChecklist(checklist)
+    setChecklists(await getAllChecklists())
+  }, [])
+
+  const removeChecklist = useCallback(async (id) => {
+    await deleteChecklist(id)
+    setChecklists(await getAllChecklists())
+  }, [])
+
   // Derived gamification data
   const totalXP = entries.reduce((s, e) => s + calculateDayXP(e), 0)
   const levelInfo = getLevelInfo(totalXP)
@@ -184,7 +197,7 @@ export function useApp() {
   const logStreak = streaks.find(s => s.key === 'logging')?.current || 0
 
   return {
-    entries, experiences, tasks, goTasks, backlog, errandRuns, utilityItems, profile, loading, todayEntry,
+    entries, experiences, tasks, goTasks, backlog, errandRuns, utilityItems, checklists, profile, loading, todayEntry,
     totalXP, levelInfo, streaks, earnedBadges, todayXP, logStreak,
     logEntry, updateProfile, addExperience, removeExperience,
     addTask, toggleTask, removeTask,
@@ -192,6 +205,7 @@ export function useApp() {
     addBacklogItem, toggleBacklogItem, removeBacklogItem, updateBacklogStatus,
     upsertErrandRun, removeErrandRun,
     addUtilityItem, toggleUtilityItem, removeUtilityItem,
+    upsertChecklist, removeChecklist,
     reload,
   }
 }

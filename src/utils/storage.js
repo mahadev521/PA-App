@@ -1,7 +1,7 @@
 import { openDB } from 'idb'
 
 const DB_NAME = 'lifeos-pa'
-const DB_VERSION = 5
+const DB_VERSION = 6
 const STORE = 'entries'
 const PROFILE_STORE = 'profile'
 const EXP_STORE = 'experiences'
@@ -10,6 +10,7 @@ const GO_TASKS_STORE = 'go_tasks'
 const BACKLOG_STORE = 'backlog'
 const ERRAND_STORE = 'errand_runs'
 const UTILITY_STORE = 'utility_items'
+const CHECKLIST_STORE = 'checklists'
 
 async function getDB() {
   return openDB(DB_NAME, DB_VERSION, {
@@ -41,6 +42,9 @@ async function getDB() {
       if (!db.objectStoreNames.contains(UTILITY_STORE)) {
         const us = db.createObjectStore(UTILITY_STORE, { keyPath: 'id' })
         us.createIndex('type', 'type')
+      }
+      if (!db.objectStoreNames.contains(CHECKLIST_STORE)) {
+        db.createObjectStore(CHECKLIST_STORE, { keyPath: 'id' })
       }
     },
   })
@@ -206,4 +210,20 @@ export async function saveUtilityItem(item) {
 export async function deleteUtilityItem(id) {
   const db = await getDB()
   return db.delete(UTILITY_STORE, id)
+}
+
+export async function getAllChecklists() {
+  const db = await getDB()
+  return db.getAll(CHECKLIST_STORE)
+}
+
+export async function saveChecklist(checklist) {
+  const db = await getDB()
+  const now = Date.now()
+  return db.put(CHECKLIST_STORE, { ...checklist, id: checklist.id || `cl_${now}`, created_at: checklist.created_at || now })
+}
+
+export async function deleteChecklist(id) {
+  const db = await getDB()
+  return db.delete(CHECKLIST_STORE, id)
 }

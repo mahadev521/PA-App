@@ -8,8 +8,8 @@ const MORNING_ITEMS = [
   { id: 'no_phone_morning',  emoji: '📵', label: 'No phone first 30 min',           time: 0,  principle: 'Atomic Habits — your environment controls default behavior. Protect the first 30 min from reactive mode.', book: 'Atomic Habits' },
   { id: 'drink_water',       emoji: '💧', label: 'Drink 500ml water',                time: 1,  principle: 'Compound Effect — tiny consistent acts compound into identity. You become someone who cares for their body.', book: 'The Compound Effect' },
   { id: 'gratitude',         emoji: '🙏', label: '3 things I\'m grateful for',       time: 3,  principle: 'Stoic morning reflection — begin in gratitude, not complaint. This one act sets the frame for the whole day.', book: 'Stoicism' },
-  { id: 'cold_shower',       emoji: '🚿', label: 'Cold shower',                      time: 5,  principle: 'Stoicism (Seneca) — voluntary discomfort. Do something hard before the world asks hard things of you.', book: 'Stoicism' },
   { id: 'exercise',          emoji: '🏋️', label: 'Exercise / move your body',        time: 20, principle: '7 Habits Habit 7: Sharpen the Saw (physical). Your body is the machine behind everything. Maintain it daily.', book: '7 Habits' },
+  { id: 'cold_shower',       emoji: '🚿', label: 'Cold shower',                      time: 5,  principle: 'Stoicism (Seneca) — voluntary discomfort. Finish your workout with cold water — discipline stacked on discipline.', book: 'Stoicism' },
   { id: 'morning_skincare',  emoji: '🧴', label: 'Morning skin care routine',        time: 3,  principle: 'Self-respect precedes discipline. A man who maintains himself signals: I am worth investing in.', book: 'Identity-Based' },
   { id: 'scripture',         emoji: '📖', label: 'Scripture / spiritual reading',    time: 10, principle: '7 Habits Habit 7: Sharpen the Saw (spiritual). Feed the soul before the world demands from it.', book: '7 Habits' },
   { id: 'meditate',          emoji: '🧘', label: 'Meditate (10 min)',                time: 10, principle: 'Atomic Habits — focus is a skill trained by daily reps. 10 min/day = 60 hours of focus training per year.', book: 'Atomic Habits' },
@@ -215,7 +215,7 @@ export default function RitualScreen({ todayEntry, onSave, embedded = false }) {
   return (
     <div
       className={`${embedded ? 'px-4 space-y-4 animate-fade-in' : 'screen space-y-4 animate-fade-in'}`}
-      style={embedded ? { paddingTop: '1.25rem', paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))' } : {}}
+      style={embedded ? { paddingTop: '1.25rem', paddingBottom: '2rem' } : {}}
     >
       <div>
         <h1 className="text-xl font-bold text-white">Rituals</h1>

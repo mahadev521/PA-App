@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Trash2, Check, ChevronLeft } from 'lucide-react'
 import ErrandRunScreen from './utilities/ErrandRunScreen'
 import BacklogScreen   from './utilities/BacklogScreen'
+import { ChecklistsView } from './utilities/ChecklistsScreen'
 
 // ─── Utility hub config ────────────────────────────────────────────────────
 
@@ -19,6 +20,7 @@ const UTILITIES = [
   { id: 'lifeadmin',   title: 'Life Admin',    emoji: '🧹', desc: 'The boring-but-critical stuff' },
   { id: 'fitness',     title: 'Fitness',       emoji: '🏃', desc: 'Body & training'           },
   { id: 'spiritual',   title: 'Spiritual',     emoji: '✝️', desc: 'Prayer & reflection'       },
+  { id: 'checklists',  title: 'Checklists',    emoji: '✅', desc: 'Pre-trip, work, gym & more'  },
 ]
 
 // ─── Generic utility configs ───────────────────────────────────────────────
@@ -157,7 +159,7 @@ function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete })
   const sectionHint = config.sections.find(s => s.id === activeSection)?.hint
 
   return (
-    <div className="px-4 pb-32">
+    <div className="px-4 pb-8">
       {/* Section tabs */}
       <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
         {config.sections.map(s => {
@@ -317,7 +319,7 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
   const activeSection = SECTIONS.find(s => s.id === section)
 
   return (
-    <div className="px-4 pb-32">
+    <div className="px-4 pb-8">
       {/* Section tabs */}
       <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
         {SECTIONS.map(s => {
@@ -455,6 +457,7 @@ export default function UtilitiesScreen({
   errandRuns, onSaveErrand, onDeleteErrand,
   backlog, onAddBacklog, onDeleteBacklog, onUpdateBacklogStatus,
   utilityItems, onAddUtilityItem, onToggleUtilityItem, onDeleteUtilityItem,
+  checklists, onSaveChecklist, onDeleteChecklist,
 }) {
   const [activeUtility, setActiveUtility] = useState(null)
   const activeConfig = UTILITIES.find(u => u.id === activeUtility)
@@ -481,7 +484,7 @@ export default function UtilitiesScreen({
           <p className="text-xs text-gray-500 mt-0.5">Your personal toolkit</p>
         </div>
 
-        <div className="px-4 pb-32 pt-3">
+        <div className="px-4 pb-8 pt-3">
           <div className="grid grid-cols-2 gap-3">
             {UTILITIES.map(u => {
               const cnt = pendingCount(u.id)
@@ -544,6 +547,16 @@ export default function UtilitiesScreen({
         />
       )
     }
+    if (activeUtility === 'checklists') {
+      return (
+        <ChecklistsView
+          checklists={checklists}
+          onSave={onSaveChecklist}
+          onDelete={onDeleteChecklist}
+          onBack={() => setActiveUtility(null)}
+        />
+      )
+    }
     const config = GENERIC_CONFIGS[activeUtility]
     if (config) {
       return (
@@ -558,6 +571,15 @@ export default function UtilitiesScreen({
       )
     }
     return <div className="px-4 py-12 text-center text-gray-500 text-sm">Coming soon.</div>
+  }
+
+  // Checklists owns its own header/navigation — render fullscreen without outer wrapper header
+  if (activeUtility === 'checklists') {
+    return (
+      <div className="min-h-screen bg-base">
+        {renderUtility()}
+      </div>
+    )
   }
 
   return (

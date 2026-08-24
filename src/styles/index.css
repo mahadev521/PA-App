@@ -27,10 +27,12 @@
   }
 
   #root {
-    min-height: 100dvh;
+    height: 100dvh;
     max-width: 480px;
     margin: 0 auto;
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   /* ── Range sliders — iOS style ──────────────────────────── */
@@ -133,9 +135,9 @@
 
   /* ── Screen padding ─────────────────────────────────────── */
   .screen {
-    @apply px-4 pb-28;
+    @apply px-4;
     padding-top: calc(1.25rem + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 2rem;
   }
 
   /* ── Glows ──────────────────────────────────────────────── */

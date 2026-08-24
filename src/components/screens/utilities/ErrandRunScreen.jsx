@@ -105,7 +105,7 @@ export default function ErrandRunScreen({ runs, onSaveRun, onDeleteRun }) {
     const history = (runs || []).filter(r => r.completed).sort((a, b) => b.created_at - a.created_at)
 
     return (
-      <div className="px-4 pb-32">
+      <div className="px-4 pb-8">
         <button
           onClick={() => setShowModal(true)}
           className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-white"
@@ -233,7 +233,7 @@ export default function ErrandRunScreen({ runs, onSaveRun, onDeleteRun }) {
   const skippedCount = currentRun.stops.filter(s => s.status === 'skipped').length
 
   return (
-    <div className="px-4 pb-32">
+    <div className="px-4 pb-8">
       {/* Back bar */}
       <div className="flex items-center gap-2 mt-2 mb-3">
         <button

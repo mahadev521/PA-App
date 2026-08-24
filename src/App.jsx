@@ -80,6 +80,9 @@ export default function App() {
             onAddUtilityItem={app.addUtilityItem}
             onToggleUtilityItem={app.toggleUtilityItem}
             onDeleteUtilityItem={app.removeUtilityItem}
+            checklists={app.checklists}
+            onSaveChecklist={app.upsertChecklist}
+            onDeleteChecklist={app.removeChecklist}
           />
         )
       case 'settings':
@@ -96,8 +99,8 @@ export default function App() {
   }
 
   return (
-    <div className="bg-base min-h-screen">
-      <div key={tab} className="page-enter">
+    <div className="bg-base flex flex-col" style={{ flex: 1, overflow: 'hidden' }}>
+      <div key={tab} className="page-enter flex-1 overflow-y-auto">
         {renderScreen()}
       </div>
       <BottomNav active={tab} onChange={setTab} />

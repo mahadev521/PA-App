@@ -67,7 +67,7 @@ export default function BacklogScreen({ backlog, onAdd, onDelete, onUpdateStatus
   }
 
   return (
-    <div className="px-4 pb-32">
+    <div className="px-4 pb-8">
       {/* Add form */}
       <div
         className="mt-4 p-3 rounded-2xl"

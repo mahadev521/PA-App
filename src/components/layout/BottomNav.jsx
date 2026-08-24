@@ -34,8 +34,8 @@ const TABS = [
 export default function BottomNav({ active, onChange }) {
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 px-5"
-      style={{ paddingBottom: 'calc(1.1rem + env(safe-area-inset-bottom, 0px))' }}
+      className="w-full flex-shrink-0 px-5"
+      style={{ paddingBottom: 'calc(1.1rem + env(safe-area-inset-bottom, 0px))', paddingTop: '0.5rem' }}
     >
       <div
         className="flex items-center justify-around py-3 px-2 rounded-[32px]"
