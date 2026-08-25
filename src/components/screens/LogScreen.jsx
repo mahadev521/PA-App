@@ -85,7 +85,7 @@ function SliderRow({ label, emoji, field, value, onChange, min = 0, max, step = 
         <input type="range" min={min} max={max} step={step} value={value}
           onChange={e => onChange(field, +e.target.value)}
           className="absolute inset-0 w-full h-full cursor-pointer"
-          style={{ opacity: 0, margin: 0, padding: 0 }} />
+          style={{ opacity: 0, margin: 0, padding: 0, touchAction: 'none' }} />
       </div>
       <div className="flex justify-between text-[10px] mt-0.5" style={{ color: 'rgba(240,244,255,0.2)' }}>
         <span>{min}{unit}</span><span>{max}{unit}</span>
