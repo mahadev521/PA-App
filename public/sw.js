@@ -1,4 +1,4 @@
-const CACHE = 'lifeos-v1'
+const CACHE = 'jarvis-v1'
 const ASSETS = [
   '/PA-App/',
   '/PA-App/index.html',

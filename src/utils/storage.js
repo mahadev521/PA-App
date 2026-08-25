@@ -1,6 +1,6 @@
 import { openDB } from 'idb'
 
-const DB_NAME = 'lifeos-pa'
+const DB_NAME = 'jarvis-pa'
 const DB_VERSION = 6
 const STORE = 'entries'
 const PROFILE_STORE = 'profile'
@@ -108,7 +108,7 @@ export async function exportData() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `lifeos-backup-${new Date().toISOString().slice(0, 10)}.json`
+  a.download = `jarvis-backup-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
 }

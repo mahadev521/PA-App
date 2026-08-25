@@ -16,7 +16,7 @@ export default function App() {
     return (
       <div className="flex-1 bg-base flex flex-col items-center justify-center gap-4">
         <div className="text-4xl animate-bounce-in">🚀</div>
-        <p className="text-gray-400 text-sm">Loading LifeOS…</p>
+        <p className="text-gray-400 text-sm">Loading Jarvis…</p>
       </div>
     )
   }

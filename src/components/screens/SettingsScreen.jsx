@@ -131,7 +131,7 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload }) {
       <div className="card">
         <div className="flex items-center gap-2 text-gray-400 text-xs">
           <Info size={14} />
-          <span>LifeOS v1.0 · All data stored on your device · <a href="https://github.com" className="text-accent">GitHub Pages</a></span>
+          <span>Jarvis v1.0 · All data stored on your device · <a href="https://github.com" className="text-accent">GitHub Pages</a></span>
         </div>
       </div>
     </div>

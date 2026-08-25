@@ -44,7 +44,7 @@ export default function OnboardingScreen({ onComplete }) {
               🚀
             </div>
             <div>
-              <h1 className="text-4xl font-black text-white mb-2">LifeOS</h1>
+              <h1 className="text-4xl font-black text-white mb-2">Jarvis</h1>
               <p className="text-base font-medium" style={{ color: 'rgba(240,244,255,0.55)' }}>
                 Your second brain. Your daily operating system.
               </p>
