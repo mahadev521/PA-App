@@ -53,14 +53,15 @@ function MonthTracker({ entries }) {
         </span>
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5 mb-1">
+      <div className="px-1">
+      <div className="grid grid-cols-7 gap-1 mb-1">
         {['M','T','W','T','F','S','S'].map((l, i) => (
           <div key={i} className="text-center text-[10px] font-semibold py-0.5"
             style={{ color: i >= 5 ? 'rgba(167,139,250,0.5)' : 'rgba(240,244,255,0.28)' }}>{l}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-1">
         {cells.map((cell, i) => {
           if (!cell) return <div key={`pad-${i}`} className="aspect-square" />
           const { date, day } = cell
@@ -76,7 +77,7 @@ function MonthTracker({ entries }) {
           else                    { bg = 'rgba(244,63,94,0.10)'; textColor = 'rgba(244,63,94,0.55)'; borderStyle = '1px solid rgba(244,63,94,0.15)' }
 
           return (
-            <div key={date} className="aspect-square rounded-lg flex items-center justify-center transition-all"
+            <div key={date} className="aspect-square rounded-2xl flex items-center justify-center transition-all"
               style={{ background: bg, border: borderStyle }}>
               {logged && !isFuture
                 ? <Check size={11} strokeWidth={2.8} style={{ color: isToday ? '#c4b5fd' : '#6ee7b7' }} />
@@ -85,6 +86,7 @@ function MonthTracker({ entries }) {
             </div>
           )
         })}
+      </div>
       </div>
     </div>
   )
@@ -367,19 +369,13 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
         )}
       </button>
 
-      {/* ── Life Direction Scores ────────────────────────────────── */}
-      <DirectionScores scores={scores} todayEntry={todayEntry} />
-
-      {/* ── Month Tracker ────────────────────────────────────────── */}
-      <MonthTracker entries={entries || []} />
-
       {/* ── Brain Pulse Insights ─────────────────────────────────── */}
       {insights.length > 0 && (
         <div>
           <p className="section-title">🧠 Brain Pulse</p>
-          <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="space-y-2">
             {insights.map((ins, i) => (
-              <div key={i} className={`flex-shrink-0 w-[270px] px-4 py-3.5 rounded-2xl border text-xs leading-relaxed ${
+              <div key={i} className={`w-full px-4 py-3 rounded-2xl border text-xs leading-relaxed ${
                 ins.type === 'warn' ? 'bg-rose/5 border-rose/20 text-gray-200' :
                 ins.type === 'pos'  ? 'bg-emerald/5 border-emerald/20 text-gray-200' :
                                      'bg-accent/5 border-accent/20 text-gray-200'
@@ -420,6 +416,12 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
           </div>
         )}
       </div>
+
+      {/* ── Life Direction Scores ────────────────────────────────── */}
+      <DirectionScores scores={scores} todayEntry={todayEntry} />
+
+      {/* ── Month Tracker ────────────────────────────────────────── */}
+      <MonthTracker entries={entries || []} />
 
     </div>
   )

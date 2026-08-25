@@ -59,15 +59,35 @@ function offsetDate(dateStr, days) {
 // ─── Reusable Input Widgets ───────────────────────────────────────
 
 function SliderRow({ label, emoji, field, value, onChange, min = 0, max, step = 1, unit = '' }) {
+  const pct = max > min ? ((value - min) / (max - min)) * 100 : 0
   return (
     <div>
-      <div className="flex justify-between items-center mb-1">
+      <div className="flex justify-between items-center mb-1.5">
         <label className="text-sm text-gray-300 flex items-center gap-1.5">{emoji} {label}</label>
         <span className="text-sm font-bold text-white">{value}{unit}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={e => onChange(field, +e.target.value)} className="w-full" />
-      <div className="flex justify-between text-[10px] text-gray-600 mt-0.5">
+      <div className="relative" style={{ height: '24px' }}>
+        {/* Track */}
+        <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 h-1.5 rounded-full pointer-events-none"
+          style={{ background: 'rgba(255,255,255,0.08)' }} />
+        {/* Fill */}
+        <div className="absolute top-1/2 left-0 -translate-y-1/2 h-1.5 rounded-full pointer-events-none transition-all duration-75"
+          style={{ width: `${pct}%`, background: 'linear-gradient(90deg,rgba(124,58,237,0.65),#7c3aed)' }} />
+        {/* Thumb */}
+        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full pointer-events-none"
+          style={{
+            left: `${pct}%`,
+            background: 'radial-gradient(circle at 35% 35%,#a78bfa,#7c3aed)',
+            boxShadow: '0 1px 6px rgba(124,58,237,0.6)',
+            border: '1.5px solid rgba(255,255,255,0.25)',
+          }} />
+        {/* Native input — invisible, handles all touch */}
+        <input type="range" min={min} max={max} step={step} value={value}
+          onChange={e => onChange(field, +e.target.value)}
+          className="absolute inset-0 w-full h-full cursor-pointer"
+          style={{ opacity: 0, margin: 0, padding: 0 }} />
+      </div>
+      <div className="flex justify-between text-[10px] mt-0.5" style={{ color: 'rgba(240,244,255,0.2)' }}>
         <span>{min}{unit}</span><span>{max}{unit}</span>
       </div>
     </div>
@@ -75,24 +95,19 @@ function SliderRow({ label, emoji, field, value, onChange, min = 0, max, step = 
 }
 
 function ScoreRow({ label, emoji, field, value, onChange }) {
-  const cls = n => `flex-1 h-12 rounded-xl text-base font-bold transition-all active:scale-95 ${
+  const cls = n => `flex-1 h-8 rounded-lg text-xs font-bold transition-all active:scale-95 ${
     value >= n
       ? n <= 4 ? 'bg-rose text-white' : n <= 7 ? 'bg-gold text-black' : 'bg-emerald text-black'
       : 'bg-border text-gray-500'
   }`
   return (
     <div>
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex justify-between items-center mb-1.5">
         <label className="text-sm text-gray-300">{emoji} {label}</label>
         <span className="text-sm font-bold text-white">{value}/10</span>
       </div>
-      <div className="flex gap-2 mb-2">
-        {[1,2,3,4,5].map(n => (
-          <button key={n} onClick={() => onChange(field, n)} className={cls(n)}>{n}</button>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        {[6,7,8,9,10].map(n => (
+      <div className="flex gap-1">
+        {[1,2,3,4,5,6,7,8,9,10].map(n => (
           <button key={n} onClick={() => onChange(field, n)} className={cls(n)}>{n}</button>
         ))}
       </div>
