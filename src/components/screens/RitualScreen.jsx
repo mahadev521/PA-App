@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Check, ChevronDown, ChevronUp, Info } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Info, RotateCcw } from 'lucide-react'
 import { todayStr } from '../../utils/gamification'
 
 // ─── All ritual groups ────────────────────────────────────────────
@@ -140,43 +140,69 @@ function RitualItem({ item, done, onToggle }) {
   )
 }
 
-function RitualSection({ title, emoji, items, rituals, onToggle, quote, completionMsg, defaultOpen = false }) {
+function RitualSection({ sectionKey, title, emoji, items, rituals, onToggle, onReset, onToggleEnabled, enabled = true, quote, completionMsg, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen)
   const done = items.filter(i => rituals[i.id]).length
   const pct = Math.round((done / items.length) * 100)
   const allDone = done === items.length
   const timeTotal = items.filter(i => i.time > 0).reduce((s, i) => s + i.time, 0)
 
+  useEffect(() => { if (!enabled) setOpen(false) }, [enabled])
+
   return (
-    <div className="card space-y-0">
+    <div className={`card space-y-0 transition-opacity ${!enabled ? 'opacity-50' : ''}`}>
       {/* Header — always visible, tap to expand */}
-      <button onClick={() => setOpen(o => !o)} className="flex items-center gap-3 w-full">
-        <span className="text-xl flex-shrink-0">{emoji}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-semibold text-white text-sm">{title}</span>
-            <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-bold ${allDone ? 'text-emerald' : 'text-gray-400'}`}>{done}/{items.length}</span>
-              {allDone && <Check size={12} className="text-emerald" />}
-              {open ? <ChevronUp size={13} className="text-gray-500" /> : <ChevronDown size={13} className="text-gray-500" />}
+      <div className="flex items-center gap-2 w-full">
+        <button onClick={() => enabled && setOpen(o => !o)} className="flex items-center gap-3 flex-1 min-w-0">
+          <span className="text-xl flex-shrink-0">{emoji}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <span className={`font-semibold text-sm ${enabled ? 'text-white' : 'text-gray-500'}`}>{title}</span>
+              <div className="flex items-center gap-1.5">
+                {!enabled ? (
+                  <span className="text-[10px] text-gray-600 font-semibold mr-1">OFF</span>
+                ) : (
+                  <>
+                    <span className={`text-xs font-bold ${allDone ? 'text-emerald' : 'text-gray-400'}`}>{done}/{items.length}</span>
+                    {allDone && <Check size={12} className="text-emerald" />}
+                    {open ? <ChevronUp size={13} className="text-gray-500" /> : <ChevronDown size={13} className="text-gray-500" />}
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="h-2 bg-border rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-500 ${!enabled ? 'bg-transparent' : allDone ? 'bg-emerald' : 'bg-accent'}`}
+                style={{ width: enabled ? `${pct}%` : '0%' }} />
             </div>
           </div>
-          <div className="h-2 bg-border rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-emerald' : 'bg-accent'}`}
-              style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-      </button>
+        </button>
+        {/* On/Off toggle */}
+        <button
+          onClick={() => onToggleEnabled(sectionKey)}
+          className={`relative w-9 h-5 rounded-full transition-all flex-shrink-0 ${enabled ? 'bg-accent' : 'bg-gray-700'}`}
+        >
+          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${enabled ? 'left-[18px]' : 'left-0.5'}`} />
+        </button>
+      </div>
 
-      {open && (
+      {open && enabled && (
         <div className="space-y-3 pt-4 mt-3 border-t border-border animate-fade-in">
           {quote && (
             <p className="text-xs text-gray-400 italic border-l-2 border-accent/40 pl-3 leading-relaxed">{quote}</p>
           )}
           {allDone ? (
-            <div className="text-center py-3 bg-emerald/5 border border-emerald/20 rounded-xl">
-              <p className="text-emerald font-bold text-sm">{completionMsg}</p>
-              {timeTotal > 0 && <p className="text-xs text-gray-400 mt-1">{timeTotal} min invested in yourself</p>}
+            <div className="py-3 bg-emerald/5 border border-emerald/20 rounded-xl">
+              <p className="text-emerald font-bold text-sm text-center">{completionMsg}</p>
+              {timeTotal > 0 && <p className="text-xs text-gray-400 mt-1 text-center">{timeTotal} min invested in yourself</p>}
+              <div className="flex justify-center mt-2">
+                <button
+                  onClick={() => onReset(items)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 transition-all active:scale-95"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                >
+                  <RotateCcw size={11} /> Reset
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -197,6 +223,12 @@ export default function RitualScreen({ todayEntry, onSave, embedded = false }) {
   const today = todayStr()
   const isWeekend = [0, 6].includes(new Date().getDay())
   const [rituals, setRituals] = useState(todayEntry?.rituals || {})
+  const [enabledSections, setEnabledSections] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ritual_enabled_sections')
+      return saved ? JSON.parse(saved) : Object.fromEntries(ALL_GROUPS.map(g => [g.key, true]))
+    } catch { return Object.fromEntries(ALL_GROUPS.map(g => [g.key, true])) }
+  })
 
   useEffect(() => {
     setRituals(todayEntry?.rituals || {})
@@ -208,9 +240,23 @@ export default function RitualScreen({ todayEntry, onSave, embedded = false }) {
     await onSave({ ...(todayEntry || {}), date: today, rituals: updated })
   }
 
-  const totalItems = ALL_GROUPS.reduce((s, g) => s + g.items.length, 0)
-  const totalDone = ALL_GROUPS.reduce((s, g) => s + g.items.filter(i => rituals[i.id]).length, 0)
-  const overallPct = Math.round((totalDone / totalItems) * 100)
+  function toggleSection(key) {
+    const updated = { ...enabledSections, [key]: !enabledSections[key] }
+    setEnabledSections(updated)
+    localStorage.setItem('ritual_enabled_sections', JSON.stringify(updated))
+  }
+
+  async function resetSection(sectionItems) {
+    const updated = { ...rituals }
+    sectionItems.forEach(item => { updated[item.id] = false })
+    setRituals(updated)
+    await onSave({ ...(todayEntry || {}), date: today, rituals: updated })
+  }
+
+  const enabledGroups = ALL_GROUPS.filter(g => enabledSections[g.key] !== false)
+  const totalItems = enabledGroups.reduce((s, g) => s + g.items.length, 0)
+  const totalDone = enabledGroups.reduce((s, g) => s + g.items.filter(i => rituals[i.id]).length, 0)
+  const overallPct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0
 
   return (
     <div
@@ -246,66 +292,90 @@ export default function RitualScreen({ todayEntry, onSave, embedded = false }) {
 
       {/* Morning Ritual */}
       <RitualSection
+        sectionKey="morning"
         title="Morning Ritual"
         emoji="🌅"
         items={MORNING_ITEMS}
         rituals={rituals}
         onToggle={toggle}
+        onReset={resetSection}
+        onToggleEnabled={toggleSection}
+        enabled={enabledSections['morning'] !== false}
         quote='"Win the morning, win the day." — Tim Ferriss'
         completionMsg="🔥 Morning ritual complete! You won the morning."
       />
 
       {/* Work Start */}
       <RitualSection
+        sectionKey="work_start"
         title="Work Start — Enter Deep Focus"
         emoji="🚀"
         items={WORK_START_ITEMS}
         rituals={rituals}
         onToggle={toggle}
+        onReset={resetSection}
+        onToggleEnabled={toggleSection}
+        enabled={enabledSections['work_start'] !== false}
         quote='"A ritual tells your mind: time to focus. Build the association daily until it becomes automatic." — Cal Newport, Deep Work'
         completionMsg="🎯 Focus ritual complete — the session has officially begun."
       />
 
       {/* Task Switch — Attention Residue Clearer */}
       <RitualSection
+        sectionKey="task_switch"
         title="Task Switch — Clear Attention Residue"
         emoji="🔄"
         items={TASK_SWITCH_ITEMS}
         rituals={rituals}
         onToggle={toggle}
+        onReset={resetSection}
+        onToggleEnabled={toggleSection}
+        enabled={enabledSections['task_switch'] !== false}
         quote='"When you switch tasks without properly closing the first, part of your attention stays on the previous task. You are never fully present." — Sophie Leroy, Attention Residue Research'
         completionMsg="🌊 Attention reset complete. You are fully here now."
       />
 
       {/* Work End / Shutdown */}
       <RitualSection
+        sectionKey="work_end"
         title="Work End — Shutdown Complete"
         emoji="🔐"
         items={WORK_END_ITEMS}
         rituals={rituals}
         onToggle={toggle}
+        onReset={resetSection}
+        onToggleEnabled={toggleSection}
+        enabled={enabledSections['work_end'] !== false}
         quote='"At the end of the workday, say out loud: Shutdown complete. This shuts down access to work thoughts in a way an open-ended fade into the evening never can." — Cal Newport, Deep Work'
         completionMsg="🔐 Shutdown complete. Your mind is free to rest now."
       />
 
       {/* Dale Carnegie — Day-Tight Compartments */}
       <RitualSection
+        sectionKey="compartment"
         title="Day Compartment — Born Today"
         emoji="🚢"
         items={DAY_COMPARTMENT_ITEMS}
         rituals={rituals}
         onToggle={toggle}
+        onReset={resetSection}
+        onToggleEnabled={toggleSection}
+        enabled={enabledSections['compartment'] !== false}
         quote='"Compartmentalize your day. Seal off the past. Seal off the future. Live in day-tight compartments — born every morning, die by night. This one day, fully lived, is a complete life." — Dale Carnegie, How to Stop Worrying and Start Living'
         completionMsg="🚢 Today's compartment is set. This day is entirely yours."
       />
 
       {/* Evening Ritual */}
       <RitualSection
+        sectionKey="evening"
         title="Evening Ritual"
         emoji="🌙"
         items={EVENING_ITEMS}
         rituals={rituals}
         onToggle={toggle}
+        onReset={resetSection}
+        onToggleEnabled={toggleSection}
+        enabled={enabledSections['evening'] !== false}
         quote='"Let us prepare our minds as if we had come to the very end of life. Let us postpone nothing." — Seneca'
         completionMsg="✨ Evening ritual complete. Rest well — you earned it."
       />
@@ -318,11 +388,15 @@ export default function RitualScreen({ todayEntry, onSave, embedded = false }) {
           </div>
         )}
         <RitualSection
+          sectionKey="weekend"
           title="Weekend Ritual"
           emoji="🌤️"
           items={WEEKEND_ITEMS}
           rituals={rituals}
           onToggle={toggle}
+          onReset={resetSection}
+          onToggleEnabled={toggleSection}
+          enabled={enabledSections['weekend'] !== false}
           defaultOpen={isWeekend}
           quote='"The things that matter most must never be at the mercy of the things that matter least." — Goethe. Weekends are where the real compounding happens.'
           completionMsg="🌤️ Weekend ritual complete. You invested in every direction that matters."
