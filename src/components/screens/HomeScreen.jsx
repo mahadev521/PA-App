@@ -191,7 +191,7 @@ function DailyChallenge({ todayEntry, onSave }) {
   )
 }
 
-// ─── Life direction score bars ────────────────────────────────────
+// ─── Life direction score spider web ─────────────────────────────
 
 function DirectionScores({ scores, todayEntry }) {
   const dirs = [
@@ -206,9 +206,20 @@ function DirectionScores({ scores, todayEntry }) {
     ? Math.round(dirs.reduce((s, d) => s + (scores[d.key] || 0), 0) / dirs.length)
     : 0
 
+  const cx = 110, cy = 110, r = 75, n = dirs.length
+  const angle = (i) => (-Math.PI / 2) + (2 * Math.PI / n) * i
+  const pt = (i, scale = 1) => [
+    cx + r * scale * Math.cos(angle(i)),
+    cy + r * scale * Math.sin(angle(i)),
+  ]
+  const poly = (scale) => dirs.map((_, i) => pt(i, scale).join(',')).join(' ')
+  const scorePoints = dirs.map((d, i) =>
+    pt(i, Math.max(0.01, (scores[d.key] || 0) / 100)).join(',')
+  ).join(' ')
+
   return (
     <div className="card">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <p className="section-title mb-0">Life Score Today</p>
         <span className="text-xs font-black px-2.5 py-1 rounded-xl" style={{
           background: !logged ? 'rgba(255,255,255,0.05)' : avg >= 70 ? 'rgba(16,185,129,0.15)' : avg >= 40 ? 'rgba(124,58,237,0.15)' : 'rgba(244,63,94,0.12)',
@@ -217,26 +228,67 @@ function DirectionScores({ scores, todayEntry }) {
           {logged ? `${avg}/100` : 'Log today'}
         </span>
       </div>
-      <div className="space-y-2.5">
+
+      <svg viewBox="0 0 220 220" className="w-full max-w-[260px] mx-auto">
+        <defs>
+          <radialGradient id="rfill" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(124,58,237,0.45)" />
+            <stop offset="100%" stopColor="rgba(124,58,237,0.08)" />
+          </radialGradient>
+        </defs>
+
+        {/* Spoke lines */}
+        {dirs.map((_, i) => {
+          const [x, y] = pt(i, 1)
+          return <line key={i} x1={cx} y1={cy} x2={x} y2={y}
+            stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+        })}
+
+        {/* Grid rings at 25/50/75/100 */}
+        {[0.25, 0.5, 0.75, 1].map(s => (
+          <polygon key={s} points={poly(s)} fill="none"
+            stroke={s === 1 ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)'}
+            strokeWidth={s === 1 ? 1.2 : 0.8} />
+        ))}
+
+        {/* Score polygon */}
+        {logged && (
+          <polygon points={scorePoints}
+            fill="url(#rfill)"
+            stroke="rgba(167,139,250,0.75)"
+            strokeWidth="1.5" strokeLinejoin="round" />
+        )}
+
+        {/* Score dots */}
+        {logged && dirs.map((d, i) => {
+          const v = (scores[d.key] || 0) / 100
+          if (!v) return null
+          const [x, y] = pt(i, v)
+          return <circle key={d.key} cx={x} cy={y} r="3.5"
+            fill={d.color} stroke="rgba(9,11,26,0.8)" strokeWidth="1.5" />
+        })}
+
+        {/* Axis emoji labels */}
+        {dirs.map((d, i) => {
+          const [x, y] = pt(i, 1.21)
+          return (
+            <text key={d.key} x={x} y={y}
+              textAnchor="middle" dominantBaseline="middle" fontSize="17">
+              {d.emoji}
+            </text>
+          )
+        })}
+      </svg>
+
+      {/* Score legend */}
+      <div className="flex justify-around mt-1 px-2">
         {dirs.map(d => (
-          <div key={d.key} className="flex items-center gap-3">
-            <span className="text-sm leading-none w-5 text-center flex-shrink-0">{d.emoji}</span>
-            <span className="text-[11px] font-semibold w-11 flex-shrink-0"
-              style={{ color: 'rgba(240,244,255,0.45)' }}>{d.label}</span>
-            <div className="flex-1 h-2.5 rounded-full overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.07)' }}>
-              <div className="h-full rounded-full transition-all duration-700"
-                style={{
-                  width: `${scores[d.key] || 0}%`,
-                  background: logged ? `linear-gradient(90deg, ${d.color}aa, ${d.color})` : 'rgba(255,255,255,0.08)',
-                  boxShadow: logged && (scores[d.key] || 0) > 0 ? `0 0 8px ${d.color}55` : 'none',
-                }} />
-            </div>
-            <span className="text-xs font-black w-6 text-right flex-shrink-0" style={{
-              color: (scores[d.key] || 0) >= 60 ? d.color : 'rgba(240,244,255,0.32)',
-            }}>
+          <div key={d.key} className="flex flex-col items-center gap-0.5">
+            <span className="text-xs font-black leading-none"
+              style={{ color: logged && (scores[d.key] || 0) > 0 ? d.color : 'rgba(240,244,255,0.25)' }}>
               {scores[d.key] || 0}
             </span>
+            <span className="text-[9px] text-gray-600">{d.label}</span>
           </div>
         ))}
       </div>
