@@ -6,6 +6,7 @@ function formatReminder(ts) {
 }
 
 const TAGS = [
+  { id: 'inbox',    label: 'Inbox',    emoji: '📥' },
   { id: 'buy',      label: 'Buy',      emoji: '🛒' },
   { id: 'fix',      label: 'Fix',      emoji: '🔧' },
   { id: 'call',     label: 'Call',     emoji: '📞' },

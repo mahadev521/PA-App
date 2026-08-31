@@ -7,6 +7,7 @@ import SettingsScreen from './components/screens/SettingsScreen'
 import OnboardingScreen from './components/screens/OnboardingScreen'
 import UtilitiesScreen from './components/screens/UtilitiesScreen'
 import PortfolioScreen from './components/screens/PortfolioScreen'
+import QuickCapture from './components/QuickCapture'
 import { useApp } from './hooks/useApp'
 
 export default function App() {
@@ -45,6 +46,17 @@ export default function App() {
             onSave={app.logEntry}
             entries={app.entries}
             onNavigate={setTab}
+            backlog={app.backlog}
+            utilityItems={app.utilityItems}
+            errandRuns={app.errandRuns}
+            onUpdateBacklogStatus={app.updateBacklogStatus}
+            onDeleteBacklog={app.removeBacklogItem}
+            onSetBacklogReminder={app.setBacklogReminder}
+            onSetUtilityItemReminder={app.setUtilityItemReminder}
+            onToggleUtilityItem={app.toggleUtilityItem}
+            onDeleteUtilityItem={app.removeUtilityItem}
+            onAddExperience={app.addExperience}
+            onUpdateProfile={app.updateProfile}
           />
         )
       case 'daily':
@@ -125,6 +137,7 @@ export default function App() {
         {renderScreen()}
       </div>
       <BottomNav active={tab} onChange={setTab} />
+      <QuickCapture onAdd={app.addBacklogItem} />
     </div>
   )
 }
