@@ -1,4 +1,4 @@
-import { Home, PenLine, Layers, Compass } from 'lucide-react'
+import { Home, PenLine, Layers, Compass, PieChart } from 'lucide-react'
 
 const TABS = [
   {
@@ -28,6 +28,13 @@ const TABS = [
     label: 'Progress',
     from: '#e11d48', to: '#be123c',
     glow: 'rgba(225,29,72,0.55)',
+  },
+  {
+    id: 'portfolio',
+    icon: PieChart,
+    label: 'Portfolio',
+    from: '#059669', to: '#047857',
+    glow: 'rgba(5,150,105,0.55)',
   },
 ]
 

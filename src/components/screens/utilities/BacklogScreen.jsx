@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { Plus, Trash2, Check, X } from 'lucide-react'
+import { Plus, Trash2, Check, X, Bell } from 'lucide-react'
+
+function formatReminder(ts) {
+  return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
 
 const TAGS = [
   { id: 'buy',      label: 'Buy',      emoji: '🛒' },
@@ -34,16 +38,18 @@ function getStatus(item) {
   return item.done ? 'done' : 'backlog'
 }
 
-export default function BacklogScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
+export default function BacklogScreen({ backlog, onAdd, onDelete, onUpdateStatus, onSetReminder }) {
   const [title, setTitle]         = useState('')
   const [tag, setTag]             = useState('buy')
+  const [remindAt, setRemindAt]   = useState('')
   const [filterTag, setFilterTag] = useState('all')
   const [filterStatus, setFilterStatus] = useState('active') // 'active' | 'done' | 'all'
 
   function handleAdd() {
     if (!title.trim()) return
-    onAdd(title.trim(), tag)
+    onAdd(title.trim(), tag, undefined, remindAt ? { remind_at: new Date(remindAt).getTime() } : {})
     setTitle('')
+    setRemindAt('')
   }
 
   const items = (backlog || []).map(i => ({ ...i, _status: getStatus(i) }))
@@ -109,6 +115,21 @@ export default function BacklogScreen({ backlog, onAdd, onDelete, onUpdateStatus
           >
             Add
           </button>
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <Bell size={13} style={{ color: 'rgba(255,255,255,0.35)' }} />
+          <input
+            type="datetime-local"
+            value={remindAt}
+            onChange={e => setRemindAt(e.target.value)}
+            className="flex-1 bg-transparent text-xs outline-none px-2 py-1.5 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
+          />
+          {remindAt && (
+            <button onClick={() => setRemindAt('')} className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
@@ -177,7 +198,7 @@ export default function BacklogScreen({ backlog, onAdd, onDelete, onUpdateStatus
             </p>
             <div className="flex flex-col gap-2">
               {group.sort((a, b) => b.created_at - a.created_at).map(item => (
-                <BacklogItem key={item.id} item={item} st={st} onUpdateStatus={onUpdateStatus} onDelete={onDelete} />
+                <BacklogItem key={item.id} item={item} st={st} onUpdateStatus={onUpdateStatus} onDelete={onDelete} onSetReminder={onSetReminder} />
               ))}
             </div>
           </div>
@@ -189,7 +210,7 @@ export default function BacklogScreen({ backlog, onAdd, onDelete, onUpdateStatus
         <div className="flex flex-col gap-2">
           {filtered.sort((a, b) => b.created_at - a.created_at).map(item => {
             const st = STATUS['done']
-            return <BacklogItem key={item.id} item={item} st={st} onUpdateStatus={onUpdateStatus} onDelete={onDelete} />
+            return <BacklogItem key={item.id} item={item} st={st} onUpdateStatus={onUpdateStatus} onDelete={onDelete} onSetReminder={onSetReminder} />
           })}
         </div>
       )}
@@ -197,11 +218,12 @@ export default function BacklogScreen({ backlog, onAdd, onDelete, onUpdateStatus
   )
 }
 
-function BacklogItem({ item, st, onUpdateStatus, onDelete }) {
+function BacklogItem({ item, st, onUpdateStatus, onDelete, onSetReminder }) {
   const tagInfo = TAGS.find(t => t.id === item.tag) || TAGS[0]
   const isDone  = item._status === 'done'
   const nextStatus = STATUS_CYCLE[item._status]
   const nextSt     = STATUS[nextStatus]
+  const isOverdue  = item.remind_at && item.remind_at <= Date.now()
 
   return (
     <div
@@ -261,6 +283,22 @@ function BacklogItem({ item, st, onUpdateStatus, onDelete }) {
             {st.label} →
           </button>
         </div>
+      )}
+
+      {/* Reminder badge */}
+      {item.remind_at && (
+        <button
+          onClick={() => onSetReminder?.(item.id, null)}
+          className="flex-shrink-0 flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-lg"
+          style={{
+            background: isOverdue ? 'rgba(244,63,94,0.18)' : 'rgba(255,255,255,0.07)',
+            color:      isOverdue ? '#fb7185' : 'rgba(255,255,255,0.4)',
+          }}
+          title="Tap to clear reminder"
+        >
+          <Bell size={11} />
+          {formatReminder(item.remind_at)}
+        </button>
       )}
 
       {/* Delete */}

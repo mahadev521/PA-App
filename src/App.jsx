@@ -6,6 +6,7 @@ import LifeScreen     from './components/screens/LifeScreen'
 import SettingsScreen from './components/screens/SettingsScreen'
 import OnboardingScreen from './components/screens/OnboardingScreen'
 import UtilitiesScreen from './components/screens/UtilitiesScreen'
+import PortfolioScreen from './components/screens/PortfolioScreen'
 import { useApp } from './hooks/useApp'
 
 export default function App() {
@@ -80,13 +81,23 @@ export default function App() {
             onAddBacklog={app.addBacklogItem}
             onDeleteBacklog={app.removeBacklogItem}
             onUpdateBacklogStatus={app.updateBacklogStatus}
+            onSetBacklogReminder={app.setBacklogReminder}
             utilityItems={app.utilityItems}
             onAddUtilityItem={app.addUtilityItem}
             onToggleUtilityItem={app.toggleUtilityItem}
             onDeleteUtilityItem={app.removeUtilityItem}
+            onSetUtilityItemReminder={app.setUtilityItemReminder}
             checklists={app.checklists}
             onSaveChecklist={app.upsertChecklist}
             onDeleteChecklist={app.removeChecklist}
+          />
+        )
+      case 'portfolio':
+        return (
+          <PortfolioScreen
+            investments={app.investments}
+            onSaveInvestment={app.upsertInvestment}
+            onDeleteInvestment={app.removeInvestment}
           />
         )
       case 'settings':
@@ -95,6 +106,8 @@ export default function App() {
             profile={app.profile}
             onUpdateProfile={app.updateProfile}
             onReload={app.reload}
+            notificationPermission={app.notificationPermission}
+            onRequestNotificationPermission={app.requestNotificationPermission}
           />
         )
       default:

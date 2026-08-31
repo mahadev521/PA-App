@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getAllEntries, saveEntry, getProfile, saveProfile, getAllExperiences, saveExperience, deleteExperience, getAllTasks, saveTask, deleteTask, getAllGoTasks, saveGoTask, deleteGoTask, getAllBacklog, saveBacklogItem, deleteBacklogItem, getAllErrandRuns, saveErrandRun, deleteErrandRun, getAllUtilityItems, saveUtilityItem, deleteUtilityItem, getAllChecklists, saveChecklist, deleteChecklist } from '../utils/storage'
+import { getAllEntries, saveEntry, getProfile, saveProfile, getAllExperiences, saveExperience, deleteExperience, getAllTasks, saveTask, deleteTask, getAllGoTasks, saveGoTask, deleteGoTask, getAllBacklog, saveBacklogItem, deleteBacklogItem, getAllErrandRuns, saveErrandRun, deleteErrandRun, getAllUtilityItems, saveUtilityItem, deleteUtilityItem, getAllChecklists, saveChecklist, deleteChecklist, getAllInvestments, saveInvestment, deleteInvestment } from '../utils/storage'
 import {
   calculateDayXP,
   getLevelInfo,
@@ -7,6 +7,7 @@ import {
   evaluateBadges,
   todayStr,
 } from '../utils/gamification'
+import { getPermission, requestPermission, fireDueReminders } from '../utils/notifications'
 
 export function useApp() {
   const [entries, setEntries] = useState([])
@@ -17,15 +18,17 @@ export function useApp() {
   const [errandRuns, setErrandRuns] = useState([])
   const [utilityItems, setUtilityItems] = useState([])
   const [checklists, setChecklists] = useState([])
+  const [investments, setInvestments] = useState([])
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [todayEntry, setTodayEntry] = useState(null)
+  const [notificationPermission, setNotificationPermission] = useState(getPermission())
 
   const reload = useCallback(async () => {
-    const [all, prof, exps, tsks, gts, bl, er, ui, cls] = await Promise.all([
+    const [all, prof, exps, tsks, gts, bl, er, ui, cls, inv] = await Promise.all([
       getAllEntries(), getProfile(), getAllExperiences(), getAllTasks(),
       getAllGoTasks(), getAllBacklog(), getAllErrandRuns(), getAllUtilityItems(),
-      getAllChecklists(),
+      getAllChecklists(), getAllInvestments(),
     ])
     setEntries(all)
     setProfile(prof)
@@ -36,12 +39,48 @@ export function useApp() {
     setErrandRuns(er)
     setUtilityItems(ui)
     setChecklists(cls)
+    setInvestments(inv)
     const today = all.find(e => e.date === todayStr()) || null
     setTodayEntry(today)
     setLoading(false)
   }, [])
 
   useEffect(() => { reload() }, [reload])
+
+  // In-app reminder check: fires an OS notification for any due item, then
+  // marks it fired so it doesn't repeat. Runs on load, whenever the watched
+  // lists change, and every 60s while the app stays open.
+  useEffect(() => {
+    async function checkReminders() {
+      const candidates = [
+        ...backlog.map(i => ({ id: i.id, title: i.title, remind_at: i.remind_at, remind_fired: i.remind_fired, _src: 'backlog' })),
+        ...utilityItems.map(i => ({ id: i.id, title: i.title, remind_at: i.meta?.remind_at, remind_fired: i.meta?.remind_fired, _src: 'utility' })),
+      ]
+      const firedIds = fireDueReminders(candidates)
+      if (!firedIds.length) return
+      for (const id of firedIds) {
+        const item = candidates.find(c => c.id === id)
+        if (item._src === 'backlog') {
+          const full = backlog.find(i => i.id === id)
+          if (full) await saveBacklogItem({ ...full, remind_fired: true })
+        } else {
+          const full = utilityItems.find(i => i.id === id)
+          if (full) await saveUtilityItem({ ...full, meta: { ...full.meta, remind_fired: true } })
+        }
+      }
+      setBacklog(await getAllBacklog())
+      setUtilityItems(await getAllUtilityItems())
+    }
+    checkReminders()
+    const interval = setInterval(checkReminders, 60000)
+    return () => clearInterval(interval)
+  }, [backlog, utilityItems])
+
+  const requestNotificationPermission = useCallback(async () => {
+    const perm = await requestPermission()
+    setNotificationPermission(perm)
+    return perm
+  }, [])
 
   const logEntry = useCallback(async (data) => {
     const date = data.date || todayStr()
@@ -149,6 +188,14 @@ export function useApp() {
     setBacklog(await getAllBacklog())
   }, [])
 
+  const setBacklogReminder = useCallback(async (id, remind_at) => {
+    const all = await getAllBacklog()
+    const item = all.find(i => i.id === id)
+    if (!item) return
+    await saveBacklogItem({ ...item, remind_at, remind_fired: false })
+    setBacklog(await getAllBacklog())
+  }, [])
+
   const upsertErrandRun = useCallback(async (run) => {
     await saveErrandRun(run)
     setErrandRuns(await getAllErrandRuns())
@@ -177,6 +224,14 @@ export function useApp() {
     setUtilityItems(await getAllUtilityItems())
   }, [])
 
+  const setUtilityItemReminder = useCallback(async (id, remind_at) => {
+    const all = await getAllUtilityItems()
+    const item = all.find(i => i.id === id)
+    if (!item) return
+    await saveUtilityItem({ ...item, meta: { ...item.meta, remind_at, remind_fired: false } })
+    setUtilityItems(await getAllUtilityItems())
+  }, [])
+
   const upsertChecklist = useCallback(async (checklist) => {
     await saveChecklist(checklist)
     setChecklists(await getAllChecklists())
@@ -185,6 +240,16 @@ export function useApp() {
   const removeChecklist = useCallback(async (id) => {
     await deleteChecklist(id)
     setChecklists(await getAllChecklists())
+  }, [])
+
+  const upsertInvestment = useCallback(async (investment) => {
+    await saveInvestment(investment)
+    setInvestments(await getAllInvestments())
+  }, [])
+
+  const removeInvestment = useCallback(async (id) => {
+    await deleteInvestment(id)
+    setInvestments(await getAllInvestments())
   }, [])
 
   // Derived gamification data
@@ -197,15 +262,17 @@ export function useApp() {
   const logStreak = streaks.find(s => s.key === 'logging')?.current || 0
 
   return {
-    entries, experiences, tasks, goTasks, backlog, errandRuns, utilityItems, checklists, profile, loading, todayEntry,
+    entries, experiences, tasks, goTasks, backlog, errandRuns, utilityItems, checklists, investments, profile, loading, todayEntry,
     totalXP, levelInfo, streaks, earnedBadges, todayXP, logStreak,
+    notificationPermission, requestNotificationPermission,
     logEntry, updateProfile, addExperience, removeExperience,
     addTask, toggleTask, removeTask,
     addGoTask, toggleGoTask, removeGoTask, updateGoTaskComment, reorderGoTask,
-    addBacklogItem, toggleBacklogItem, removeBacklogItem, updateBacklogStatus,
+    addBacklogItem, toggleBacklogItem, removeBacklogItem, updateBacklogStatus, setBacklogReminder,
     upsertErrandRun, removeErrandRun,
-    addUtilityItem, toggleUtilityItem, removeUtilityItem,
+    addUtilityItem, toggleUtilityItem, removeUtilityItem, setUtilityItemReminder,
     upsertChecklist, removeChecklist,
+    upsertInvestment, removeInvestment,
     reload,
   }
 }
