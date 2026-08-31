@@ -1,8 +1,10 @@
-import { useMemo } from 'react'
-import { Zap, Plus, Check, Settings } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Zap, Plus, Check, Settings, ChevronRight, PartyPopper } from 'lucide-react'
 import { todayStr } from '../../utils/gamification'
 import { getDailyChallenge, getTimePulse, getWiseGreeting } from '../../utils/challenges'
 import { getSmartInsights } from '../../utils/analytics'
+import { getPendingFeed } from '../../utils/commandCenter'
+import WeeklyReviewScreen from './WeeklyReviewScreen'
 
 
 function calcScores(e) {
@@ -298,16 +300,73 @@ function DirectionScores({ scores, todayEntry }) {
   )
 }
 
+// ─── Command Center ────────────────────────────────────────────────
+
+const URGENCY_STYLE = {
+  overdue: { cls: 'border-rose/25 bg-rose/5',     text: 'text-rose' },
+  today:   { cls: 'border-accent/25 bg-accent/5', text: 'text-accent-light' },
+  info:    { cls: 'border-sky/20 bg-sky/5',       text: 'text-sky' },
+}
+
+function CommandCenter({ feed, onNavigate, onOpenWeeklyReview }) {
+  if (feed.length === 0) {
+    return (
+      <div className="card flex items-center gap-3 border border-emerald/20 bg-emerald/5">
+        <PartyPopper size={20} className="text-emerald flex-shrink-0" />
+        <div>
+          <p className="text-sm font-bold text-white">You're all caught up</p>
+          <p className="text-xs text-gray-400">Nothing needs your attention right now.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <p className="section-title">🎯 Needs Your Attention</p>
+      <div className="space-y-2">
+        {feed.map(item => {
+          const style = URGENCY_STYLE[item.urgency]
+          return (
+            <button
+              key={item.id}
+              onClick={() => item.target === 'weekly-review' ? onOpenWeeklyReview() : onNavigate(item.target)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition-all active:scale-[0.99] ${style.cls}`}
+            >
+              <span className="text-lg leading-none flex-shrink-0">{item.emoji}</span>
+              <span className={`flex-1 text-sm font-medium ${style.text}`}>{item.text}</span>
+              <ChevronRight size={15} className="text-gray-500 flex-shrink-0" />
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Screen ───────────────────────────────────────────────────────
 
-export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, logStreak, onNavigate, profile, onSave, entries }) {
+export default function HomeScreen({
+  levelInfo, streaks, todayEntry, todayXP, logStreak, onNavigate, profile, onSave, entries,
+  backlog, utilityItems, errandRuns,
+  onUpdateBacklogStatus, onDeleteBacklog, onSetBacklogReminder, onSetUtilityItemReminder,
+  onToggleUtilityItem, onDeleteUtilityItem, onAddExperience, onUpdateProfile,
+}) {
   const greeting = useMemo(() => getWiseGreeting(profile?.name), [profile])
   const scores = calcScores(todayEntry)
   const activeStreaks = streaks.filter(s => s.current > 0).slice(0, 5)
   const insights = useMemo(() => getSmartInsights(entries || [], streaks), [entries, streaks])
+  const feed = useMemo(
+    () => getPendingFeed({ backlog: backlog || [], utilityItems: utilityItems || [], errandRuns: errandRuns || [], profile }),
+    [backlog, utilityItems, errandRuns, profile]
+  )
+  const [showWeeklyReview, setShowWeeklyReview] = useState(false)
 
   return (
     <div className="screen space-y-4 animate-fade-in">
+
+      {/* ── Command Center ───────────────────────────────────────── */}
+      <CommandCenter feed={feed} onNavigate={onNavigate} onOpenWeeklyReview={() => setShowWeeklyReview(true)} />
 
       {/* ── Header ──────────────────────────────────────────────── */}
       <div className="flex items-start justify-between">
@@ -422,6 +481,22 @@ export default function HomeScreen({ levelInfo, streaks, todayEntry, todayXP, lo
 
       {/* ── Month Tracker ────────────────────────────────────────── */}
       <MonthTracker entries={entries || []} />
+
+      {showWeeklyReview && (
+        <WeeklyReviewScreen
+          backlog={backlog || []}
+          utilityItems={utilityItems || []}
+          onUpdateBacklogStatus={onUpdateBacklogStatus}
+          onDeleteBacklog={onDeleteBacklog}
+          onSetBacklogReminder={onSetBacklogReminder}
+          onSetUtilityItemReminder={onSetUtilityItemReminder}
+          onToggleUtilityItem={onToggleUtilityItem}
+          onDeleteUtilityItem={onDeleteUtilityItem}
+          onAddExperience={onAddExperience}
+          onUpdateProfile={onUpdateProfile}
+          onClose={() => setShowWeeklyReview(false)}
+        />
+      )}
 
     </div>
   )
