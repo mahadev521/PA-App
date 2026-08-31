@@ -7,7 +7,9 @@ function backlogStatus(item) {
 
 // Aggregates "what needs attention right now" across the existing stores —
 // no new due-date concepts, just surfacing signals that already exist.
-export function getPendingFeed({ backlog = [], utilityItems = [], errandRuns = [], profile = null, now = Date.now() } = {}) {
+const DAY_MS = 24 * 60 * 60 * 1000
+
+export function getPendingFeed({ backlog = [], utilityItems = [], errandRuns = [], goals = [], people = [], profile = null, now = Date.now() } = {}) {
   const feed = []
 
   const overdueBacklog = backlog.filter(i => i.remind_at && i.remind_at <= now)
@@ -70,6 +72,43 @@ export function getPendingFeed({ backlog = [], utilityItems = [], errandRuns = [
       text: parts.join(' · '),
       urgency: 'info',
       target: 'utilities',
+    })
+  }
+
+  const owedCount = people.reduce((s, p) => s + (p.events || []).filter(e => e.owed && !e.owed.settled).length, 0)
+  if (owedCount > 0) {
+    feed.push({
+      id: 'people-owed',
+      emoji: '🤝',
+      text: `${owedCount} favor${owedCount > 1 ? 's' : ''} owed with people`,
+      urgency: 'info',
+      target: 'utilities',
+    })
+  }
+
+  const activeGoals = goals.filter(g => g.status === 'active')
+  const nearestDeadline = activeGoals
+    .filter(g => g.target_date)
+    .map(g => ({ goal: g, daysLeft: Math.round((new Date(g.target_date + 'T00:00:00') - now) / DAY_MS) }))
+    .filter(g => g.daysLeft <= 14)
+    .sort((a, b) => a.daysLeft - b.daysLeft)[0]
+  if (nearestDeadline) {
+    feed.push({
+      id: 'goal-deadline',
+      emoji: '🎯',
+      text: nearestDeadline.daysLeft < 0
+        ? `"${nearestDeadline.goal.title}" is overdue`
+        : `${nearestDeadline.daysLeft} day${nearestDeadline.daysLeft === 1 ? '' : 's'} left on "${nearestDeadline.goal.title}"`,
+      urgency: nearestDeadline.daysLeft < 0 ? 'overdue' : 'today',
+      target: 'life',
+    })
+  } else if (activeGoals.length === 0) {
+    feed.push({
+      id: 'no-goals',
+      emoji: '🎯',
+      text: 'No goals set yet',
+      urgency: 'info',
+      target: 'life',
     })
   }
 

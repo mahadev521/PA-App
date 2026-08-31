@@ -309,37 +309,47 @@ const URGENCY_STYLE = {
 }
 
 function CommandCenter({ feed, onNavigate, onOpenWeeklyReview }) {
-  if (feed.length === 0) {
-    return (
-      <div className="card flex items-center gap-3 border border-emerald/20 bg-emerald/5">
-        <PartyPopper size={20} className="text-emerald flex-shrink-0" />
-        <div>
-          <p className="text-sm font-bold text-white">You're all caught up</p>
-          <p className="text-xs text-gray-400">Nothing needs your attention right now.</p>
-        </div>
-      </div>
-    )
-  }
+  const hasWeeklyReviewNudge = feed.some(item => item.target === 'weekly-review')
 
   return (
-    <div>
-      <p className="section-title">🎯 Needs Your Attention</p>
-      <div className="space-y-2">
-        {feed.map(item => {
-          const style = URGENCY_STYLE[item.urgency]
-          return (
-            <button
-              key={item.id}
-              onClick={() => item.target === 'weekly-review' ? onOpenWeeklyReview() : onNavigate(item.target)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition-all active:scale-[0.99] ${style.cls}`}
-            >
-              <span className="text-lg leading-none flex-shrink-0">{item.emoji}</span>
-              <span className={`flex-1 text-sm font-medium ${style.text}`}>{item.text}</span>
-              <ChevronRight size={15} className="text-gray-500 flex-shrink-0" />
-            </button>
-          )
-        })}
-      </div>
+    <div className="space-y-2">
+      {feed.length === 0 ? (
+        <div className="card flex items-center gap-3 border border-emerald/20 bg-emerald/5">
+          <PartyPopper size={20} className="text-emerald flex-shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-white">You're all caught up</p>
+            <p className="text-xs text-gray-400">Nothing needs your attention right now.</p>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <p className="section-title">🎯 Needs Your Attention</p>
+          <div className="space-y-2">
+            {feed.map(item => {
+              const style = URGENCY_STYLE[item.urgency]
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => item.target === 'weekly-review' ? onOpenWeeklyReview() : onNavigate(item.target)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition-all active:scale-[0.99] ${style.cls}`}
+                >
+                  <span className="text-lg leading-none flex-shrink-0">{item.emoji}</span>
+                  <span className={`flex-1 text-sm font-medium ${style.text}`}>{item.text}</span>
+                  <ChevronRight size={15} className="text-gray-500 flex-shrink-0" />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Always-available manual entry point, independent of the due-based nudge above */}
+      {!hasWeeklyReviewNudge && (
+        <button onClick={onOpenWeeklyReview}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-gray-500 active:text-gray-300">
+          🧭 Run a Weekly Review anytime
+        </button>
+      )}
     </div>
   )
 }
@@ -348,7 +358,7 @@ function CommandCenter({ feed, onNavigate, onOpenWeeklyReview }) {
 
 export default function HomeScreen({
   levelInfo, streaks, todayEntry, todayXP, logStreak, onNavigate, profile, onSave, entries,
-  backlog, utilityItems, errandRuns,
+  backlog, utilityItems, errandRuns, goals, people,
   onUpdateBacklogStatus, onDeleteBacklog, onSetBacklogReminder, onSetUtilityItemReminder,
   onToggleUtilityItem, onDeleteUtilityItem, onAddExperience, onUpdateProfile,
 }) {
@@ -357,8 +367,11 @@ export default function HomeScreen({
   const activeStreaks = streaks.filter(s => s.current > 0).slice(0, 5)
   const insights = useMemo(() => getSmartInsights(entries || [], streaks), [entries, streaks])
   const feed = useMemo(
-    () => getPendingFeed({ backlog: backlog || [], utilityItems: utilityItems || [], errandRuns: errandRuns || [], profile }),
-    [backlog, utilityItems, errandRuns, profile]
+    () => getPendingFeed({
+      backlog: backlog || [], utilityItems: utilityItems || [], errandRuns: errandRuns || [],
+      goals: goals || [], people: people || [], profile,
+    }),
+    [backlog, utilityItems, errandRuns, goals, people, profile]
   )
   const [showWeeklyReview, setShowWeeklyReview] = useState(false)
 

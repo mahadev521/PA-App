@@ -1,7 +1,8 @@
 import { openDB } from 'idb'
+import { encryptJSON, decryptJSON } from './crypto'
 
 const DB_NAME = 'jarvis-pa'
-const DB_VERSION = 7
+const DB_VERSION = 8
 const STORE = 'entries'
 const PROFILE_STORE = 'profile'
 const EXP_STORE = 'experiences'
@@ -12,6 +13,8 @@ const ERRAND_STORE = 'errand_runs'
 const UTILITY_STORE = 'utility_items'
 const CHECKLIST_STORE = 'checklists'
 const INVESTMENT_STORE = 'investments'
+const GOALS_STORE = 'goals'
+const PEOPLE_STORE = 'people'
 
 // Registry of every store included in export/import backups — add new stores
 // here so a future addition doesn't silently get left out of backups again.
@@ -25,6 +28,8 @@ const EXPORTABLE_STORES = {
   utility_items: UTILITY_STORE,
   checklists: CHECKLIST_STORE,
   investments: INVESTMENT_STORE,
+  goals: GOALS_STORE,
+  people: PEOPLE_STORE,
 }
 
 async function getDB() {
@@ -64,6 +69,12 @@ async function getDB() {
       if (!db.objectStoreNames.contains(INVESTMENT_STORE)) {
         const invStore = db.createObjectStore(INVESTMENT_STORE, { keyPath: 'id' })
         invStore.createIndex('category', 'category')
+      }
+      if (!db.objectStoreNames.contains(GOALS_STORE)) {
+        db.createObjectStore(GOALS_STORE, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(PEOPLE_STORE)) {
+        db.createObjectStore(PEOPLE_STORE, { keyPath: 'id' })
       }
     },
   })
@@ -118,7 +129,9 @@ export async function deleteExperience(id) {
   return db.delete(EXP_STORE, id)
 }
 
-export async function exportData() {
+export async function exportData(passphrase) {
+  if (!passphrase) throw new Error('A passphrase is required to export a backup.')
+
   const db = await getDB()
   const profile = await getProfile()
   const storeData = await Promise.all(
@@ -127,7 +140,8 @@ export async function exportData() {
   const data = { profile }
   Object.keys(EXPORTABLE_STORES).forEach((key, i) => { data[key] = storeData[i] })
 
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const envelope = await encryptJSON(data, passphrase)
+  const blob = new Blob([JSON.stringify(envelope)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -136,8 +150,10 @@ export async function exportData() {
   URL.revokeObjectURL(url)
 }
 
-export async function importData(jsonString) {
-  const data = JSON.parse(jsonString)
+export async function importData(jsonString, passphrase) {
+  const parsed = JSON.parse(jsonString)
+  const data = parsed.__encrypted ? await decryptJSON(parsed, passphrase) : parsed
+
   const db = await getDB()
   if (data.profile) {
     await saveProfile(data.profile)
@@ -271,4 +287,45 @@ export async function saveInvestment(investment) {
 export async function deleteInvestment(id) {
   const db = await getDB()
   return db.delete(INVESTMENT_STORE, id)
+}
+
+export async function getAllGoals() {
+  const db = await getDB()
+  return db.getAll(GOALS_STORE)
+}
+
+export async function saveGoal(goal) {
+  const db = await getDB()
+  const now = Date.now()
+  return db.put(GOALS_STORE, {
+    ...goal,
+    id: goal.id || `goal_${now}`,
+    created_at: goal.created_at || now,
+  })
+}
+
+export async function deleteGoal(id) {
+  const db = await getDB()
+  return db.delete(GOALS_STORE, id)
+}
+
+export async function getAllPeople() {
+  const db = await getDB()
+  return db.getAll(PEOPLE_STORE)
+}
+
+export async function savePerson(person) {
+  const db = await getDB()
+  const now = Date.now()
+  return db.put(PEOPLE_STORE, {
+    ...person,
+    id: person.id || `person_${now}`,
+    events: person.events || [],
+    created_at: person.created_at || now,
+  })
+}
+
+export async function deletePerson(id) {
+  const db = await getDB()
+  return db.delete(PEOPLE_STORE, id)
 }

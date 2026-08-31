@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getAllEntries, saveEntry, getProfile, saveProfile, getAllExperiences, saveExperience, deleteExperience, getAllTasks, saveTask, deleteTask, getAllGoTasks, saveGoTask, deleteGoTask, getAllBacklog, saveBacklogItem, deleteBacklogItem, getAllErrandRuns, saveErrandRun, deleteErrandRun, getAllUtilityItems, saveUtilityItem, deleteUtilityItem, getAllChecklists, saveChecklist, deleteChecklist, getAllInvestments, saveInvestment, deleteInvestment } from '../utils/storage'
+import { getAllEntries, saveEntry, getProfile, saveProfile, getAllExperiences, saveExperience, deleteExperience, getAllTasks, saveTask, deleteTask, getAllGoTasks, saveGoTask, deleteGoTask, getAllBacklog, saveBacklogItem, deleteBacklogItem, getAllErrandRuns, saveErrandRun, deleteErrandRun, getAllUtilityItems, saveUtilityItem, deleteUtilityItem, getAllChecklists, saveChecklist, deleteChecklist, getAllInvestments, saveInvestment, deleteInvestment, getAllGoals, saveGoal, deleteGoal, getAllPeople, savePerson, deletePerson } from '../utils/storage'
 import {
   calculateDayXP,
   getLevelInfo,
@@ -19,16 +19,18 @@ export function useApp() {
   const [utilityItems, setUtilityItems] = useState([])
   const [checklists, setChecklists] = useState([])
   const [investments, setInvestments] = useState([])
+  const [goals, setGoals] = useState([])
+  const [people, setPeople] = useState([])
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [todayEntry, setTodayEntry] = useState(null)
   const [notificationPermission, setNotificationPermission] = useState(getPermission())
 
   const reload = useCallback(async () => {
-    const [all, prof, exps, tsks, gts, bl, er, ui, cls, inv] = await Promise.all([
+    const [all, prof, exps, tsks, gts, bl, er, ui, cls, inv, gls, ppl] = await Promise.all([
       getAllEntries(), getProfile(), getAllExperiences(), getAllTasks(),
       getAllGoTasks(), getAllBacklog(), getAllErrandRuns(), getAllUtilityItems(),
-      getAllChecklists(), getAllInvestments(),
+      getAllChecklists(), getAllInvestments(), getAllGoals(), getAllPeople(),
     ])
     setEntries(all)
     setProfile(prof)
@@ -40,6 +42,8 @@ export function useApp() {
     setUtilityItems(ui)
     setChecklists(cls)
     setInvestments(inv)
+    setGoals(gls)
+    setPeople(ppl)
     const today = all.find(e => e.date === todayStr()) || null
     setTodayEntry(today)
     setLoading(false)
@@ -252,6 +256,35 @@ export function useApp() {
     setInvestments(await getAllInvestments())
   }, [])
 
+  const upsertGoal = useCallback(async (goal) => {
+    await saveGoal(goal)
+    setGoals(await getAllGoals())
+  }, [])
+
+  const removeGoal = useCallback(async (id) => {
+    await deleteGoal(id)
+    setGoals(await getAllGoals())
+  }, [])
+
+  const toggleMilestone = useCallback(async (goalId, milestoneId) => {
+    const all = await getAllGoals()
+    const goal = all.find(g => g.id === goalId)
+    if (!goal) return
+    const milestones = goal.milestones.map(m => m.id === milestoneId ? { ...m, done: !m.done } : m)
+    await saveGoal({ ...goal, milestones })
+    setGoals(await getAllGoals())
+  }, [])
+
+  const upsertPerson = useCallback(async (person) => {
+    await savePerson(person)
+    setPeople(await getAllPeople())
+  }, [])
+
+  const removePerson = useCallback(async (id) => {
+    await deletePerson(id)
+    setPeople(await getAllPeople())
+  }, [])
+
   // Derived gamification data
   const totalXP = entries.reduce((s, e) => s + calculateDayXP(e), 0)
   const levelInfo = getLevelInfo(totalXP)
@@ -262,7 +295,7 @@ export function useApp() {
   const logStreak = streaks.find(s => s.key === 'logging')?.current || 0
 
   return {
-    entries, experiences, tasks, goTasks, backlog, errandRuns, utilityItems, checklists, investments, profile, loading, todayEntry,
+    entries, experiences, tasks, goTasks, backlog, errandRuns, utilityItems, checklists, investments, goals, people, profile, loading, todayEntry,
     totalXP, levelInfo, streaks, earnedBadges, todayXP, logStreak,
     notificationPermission, requestNotificationPermission,
     logEntry, updateProfile, addExperience, removeExperience,
@@ -273,6 +306,8 @@ export function useApp() {
     addUtilityItem, toggleUtilityItem, removeUtilityItem, setUtilityItemReminder,
     upsertChecklist, removeChecklist,
     upsertInvestment, removeInvestment,
+    upsertGoal, removeGoal, toggleMilestone,
+    upsertPerson, removePerson,
     reload,
   }
 }

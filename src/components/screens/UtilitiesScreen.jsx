@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Trash2, Check, ChevronLeft, Bell } from 'lucide-react'
 import ErrandRunScreen from './utilities/ErrandRunScreen'
 import BacklogScreen   from './utilities/BacklogScreen'
+import PeopleScreen    from './utilities/PeopleScreen'
 import { ChecklistsView } from './utilities/ChecklistsScreen'
 
 function formatReminder(ts) {
@@ -25,6 +26,7 @@ const UTILITIES = [
   { id: 'fitness',     title: 'Fitness',       emoji: '🏃', desc: 'Body & training'           },
   { id: 'spiritual',   title: 'Spiritual',     emoji: '✝️', desc: 'Prayer & reflection'       },
   { id: 'debts',       title: 'Debts & Spends',emoji: '🧾', desc: 'Track debts & one-off spends' },
+  { id: 'people-crm',  title: 'People',        emoji: '🤝', desc: 'Track what matters with who' },
   { id: 'checklists',  title: 'Checklists',    emoji: '✅', desc: 'Pre-trip, work, gym & more'  },
 ]
 
@@ -570,6 +572,7 @@ export default function UtilitiesScreen({
   backlog, onAddBacklog, onDeleteBacklog, onUpdateBacklogStatus, onSetBacklogReminder,
   utilityItems, onAddUtilityItem, onToggleUtilityItem, onDeleteUtilityItem, onSetUtilityItemReminder,
   checklists, onSaveChecklist, onDeleteChecklist,
+  people, onSavePerson, onDeletePerson,
 }) {
   const [activeUtility, setActiveUtility] = useState(null)
   const activeConfig = UTILITIES.find(u => u.id === activeUtility)
@@ -578,6 +581,9 @@ export default function UtilitiesScreen({
     if (utilityId === 'errand')  return (errandRuns || []).filter(r => !r.completed).length
     if (utilityId === 'backlog') return (backlog || []).filter(i => (i.status || (i.done ? 'done' : 'backlog')) !== 'done').length
     if (utilityId === 'today')   return (backlog || []).filter(i => (i.status || (i.done ? 'done' : 'backlog')) === 'today').length
+    if (utilityId === 'people-crm') {
+      return (people || []).reduce((s, p) => s + (p.events || []).filter(e => e.owed && !e.owed.settled).length, 0)
+    }
     return (utilityItems || []).filter(i => i.type === utilityId && !i.done).length
   }
 
@@ -658,6 +664,15 @@ export default function UtilitiesScreen({
           onDelete={onDeleteBacklog}
           onUpdateStatus={onUpdateBacklogStatus}
           onSetReminder={onSetBacklogReminder}
+        />
+      )
+    }
+    if (activeUtility === 'people-crm') {
+      return (
+        <PeopleScreen
+          people={people}
+          onSavePerson={onSavePerson}
+          onDeletePerson={onDeletePerson}
         />
       )
     }
