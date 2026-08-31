@@ -1,7 +1,7 @@
 import { openDB } from 'idb'
 
 const DB_NAME = 'jarvis-pa'
-const DB_VERSION = 6
+const DB_VERSION = 7
 const STORE = 'entries'
 const PROFILE_STORE = 'profile'
 const EXP_STORE = 'experiences'
@@ -11,6 +11,21 @@ const BACKLOG_STORE = 'backlog'
 const ERRAND_STORE = 'errand_runs'
 const UTILITY_STORE = 'utility_items'
 const CHECKLIST_STORE = 'checklists'
+const INVESTMENT_STORE = 'investments'
+
+// Registry of every store included in export/import backups — add new stores
+// here so a future addition doesn't silently get left out of backups again.
+const EXPORTABLE_STORES = {
+  entries: STORE,
+  experiences: EXP_STORE,
+  tasks: TASKS_STORE,
+  go_tasks: GO_TASKS_STORE,
+  backlog: BACKLOG_STORE,
+  errand_runs: ERRAND_STORE,
+  utility_items: UTILITY_STORE,
+  checklists: CHECKLIST_STORE,
+  investments: INVESTMENT_STORE,
+}
 
 async function getDB() {
   return openDB(DB_NAME, DB_VERSION, {
@@ -45,6 +60,10 @@ async function getDB() {
       }
       if (!db.objectStoreNames.contains(CHECKLIST_STORE)) {
         db.createObjectStore(CHECKLIST_STORE, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(INVESTMENT_STORE)) {
+        const invStore = db.createObjectStore(INVESTMENT_STORE, { keyPath: 'id' })
+        invStore.createIndex('category', 'category')
       }
     },
   })
@@ -100,11 +119,15 @@ export async function deleteExperience(id) {
 }
 
 export async function exportData() {
-  const [entries, profile, experiences] = await Promise.all([getAllEntries(), getProfile(), getAllExperiences()])
-  const blob = new Blob(
-    [JSON.stringify({ profile, entries, experiences }, null, 2)],
-    { type: 'application/json' }
+  const db = await getDB()
+  const profile = await getProfile()
+  const storeData = await Promise.all(
+    Object.values(EXPORTABLE_STORES).map(storeName => db.getAll(storeName))
   )
+  const data = { profile }
+  Object.keys(EXPORTABLE_STORES).forEach((key, i) => { data[key] = storeData[i] })
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -116,15 +139,16 @@ export async function exportData() {
 export async function importData(jsonString) {
   const data = JSON.parse(jsonString)
   const db = await getDB()
-  if (data.entries?.length) {
-    const tx = db.transaction(STORE, 'readwrite')
-    await Promise.all(data.entries.map(e => tx.store.put(e)))
-    await tx.done
+  if (data.profile) {
+    await saveProfile(data.profile)
   }
-  if (data.experiences?.length) {
-    const tx2 = db.transaction(EXP_STORE, 'readwrite')
-    await Promise.all(data.experiences.map(e => tx2.store.put(e)))
-    await tx2.done
+  for (const [key, storeName] of Object.entries(EXPORTABLE_STORES)) {
+    const items = data[key]
+    if (items?.length) {
+      const tx = db.transaction(storeName, 'readwrite')
+      await Promise.all(items.map(item => tx.store.put(item)))
+      await tx.done
+    }
   }
 }
 
@@ -226,4 +250,25 @@ export async function saveChecklist(checklist) {
 export async function deleteChecklist(id) {
   const db = await getDB()
   return db.delete(CHECKLIST_STORE, id)
+}
+
+export async function getAllInvestments() {
+  const db = await getDB()
+  return db.getAll(INVESTMENT_STORE)
+}
+
+export async function saveInvestment(investment) {
+  const db = await getDB()
+  const now = Date.now()
+  return db.put(INVESTMENT_STORE, {
+    ...investment,
+    id: investment.id || `inv_${now}`,
+    created_at: investment.created_at || now,
+    updated_at: now,
+  })
+}
+
+export async function deleteInvestment(id) {
+  const db = await getDB()
+  return db.delete(INVESTMENT_STORE, id)
 }

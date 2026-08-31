@@ -1,8 +1,12 @@
 import { useState } from 'react'
-import { Plus, Trash2, Check, ChevronLeft } from 'lucide-react'
+import { Plus, Trash2, Check, ChevronLeft, Bell } from 'lucide-react'
 import ErrandRunScreen from './utilities/ErrandRunScreen'
 import BacklogScreen   from './utilities/BacklogScreen'
 import { ChecklistsView } from './utilities/ChecklistsScreen'
+
+function formatReminder(ts) {
+  return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
 
 // ─── Utility hub config ────────────────────────────────────────────────────
 
@@ -20,6 +24,7 @@ const UTILITIES = [
   { id: 'lifeadmin',   title: 'Life Admin',    emoji: '🧹', desc: 'The boring-but-critical stuff' },
   { id: 'fitness',     title: 'Fitness',       emoji: '🏃', desc: 'Body & training'           },
   { id: 'spiritual',   title: 'Spiritual',     emoji: '✝️', desc: 'Prayer & reflection'       },
+  { id: 'debts',       title: 'Debts & Spends',emoji: '🧾', desc: 'Track debts & one-off spends' },
   { id: 'checklists',  title: 'Checklists',    emoji: '✅', desc: 'Pre-trip, work, gym & more'  },
 ]
 
@@ -132,24 +137,42 @@ const GENERIC_CONFIGS = {
       { id: 'gratitude', label: '❤️ Gratitude', hint: 'What you\'re thankful for'        },
     ],
   },
+  debts: {
+    placeholder: 'e.g. ₹2000 to Ravi for trip…',
+    push: "Track it now so it doesn't become an awkward conversation later.",
+    hasAmount: true,
+    sections: [
+      { id: 'i_owe',      label: '📤 I Owe',       hint: 'Money you owe others'                     },
+      { id: 'owed_to_me', label: '📥 Owed to Me',  hint: 'Money others owe you'                      },
+      { id: 'adhoc',      label: '🧾 Ad-hoc Spend',hint: 'One-off spends to review/reflect on later' },
+    ],
+  },
 }
 
 // ─── Generic utility screen ────────────────────────────────────────────────
 
-function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete }) {
+function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete, onSetReminder }) {
   const [activeSection, setActiveSection] = useState(config.sections[0].id)
   const [inputValue, setInputValue] = useState('')
+  const [amountValue, setAmountValue] = useState('')
+  const [remindAt, setRemindAt] = useState('')
   const [showDone, setShowDone] = useState(false)
 
   const myItems      = (items || []).filter(i => i.type === utilityId)
   const sectionItems = myItems.filter(i => i.category === activeSection)
   const active       = sectionItems.filter(i => !i.done)
   const done         = sectionItems.filter(i => i.done)
+  const sectionTotal = config.hasAmount ? active.reduce((s, i) => s + (Number(i.meta?.amount) || 0), 0) : 0
 
   function handleAdd() {
     if (!inputValue.trim()) return
-    onAdd(utilityId, inputValue.trim(), activeSection)
+    const meta = {}
+    if (config.hasAmount && amountValue) meta.amount = Number(amountValue)
+    if (remindAt) meta.remind_at = new Date(remindAt).getTime()
+    onAdd(utilityId, inputValue.trim(), activeSection, meta)
     setInputValue('')
+    setAmountValue('')
+    setRemindAt('')
   }
 
   function sectionPending(sectionId) {
@@ -189,6 +212,9 @@ function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete })
       </div>
 
       {sectionHint && <p className="mt-2 text-xs text-gray-600">{sectionHint}</p>}
+      {config.hasAmount && (
+        <p className="mt-1 text-xs font-semibold" style={{ color: '#a78bfa' }}>Total: ₹{sectionTotal.toLocaleString()}</p>
+      )}
 
       {/* Push quote */}
       {config.push && (
@@ -208,6 +234,16 @@ function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete })
           placeholder={config.placeholder}
           className="flex-1 bg-transparent text-white placeholder-gray-500 text-sm outline-none px-3 py-3"
         />
+        {config.hasAmount && (
+          <input
+            type="number"
+            value={amountValue}
+            onChange={e => setAmountValue(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            placeholder="₹"
+            className="w-16 bg-transparent text-white placeholder-gray-500 text-sm outline-none px-2"
+          />
+        )}
         <button
           onClick={handleAdd}
           className="flex-shrink-0 px-4 text-sm font-semibold text-white"
@@ -216,6 +252,21 @@ function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete })
           Add
         </button>
       </div>
+      <div className="flex items-center gap-2 mt-2">
+        <Bell size={13} style={{ color: 'rgba(255,255,255,0.35)' }} />
+        <input
+          type="datetime-local"
+          value={remindAt}
+          onChange={e => setRemindAt(e.target.value)}
+          className="flex-1 bg-transparent text-xs outline-none px-2 py-1.5 rounded-lg"
+          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
+        />
+        {remindAt && (
+          <button onClick={() => setRemindAt('')} className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            Clear
+          </button>
+        )}
+      </div>
 
       {active.length === 0 && done.length === 0 && (
         <div className="text-center py-12 text-gray-600 text-sm">Nothing here yet — add above ↑</div>
@@ -223,19 +274,42 @@ function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete })
 
       {/* Active items */}
       <div className="flex flex-col gap-2 mt-4">
-        {active.sort((a, b) => b.created_at - a.created_at).map(item => (
-          <div key={item.id} className="flex items-center gap-3 p-3 rounded-2xl"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <button onClick={() => onToggle(item.id)}
-              className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center active:scale-90 transition-transform"
-              style={{ borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' }} />
-            <span className="flex-1 text-sm text-white/90 leading-snug">{item.title}</span>
-            <button onClick={() => onDelete(item.id)} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl active:bg-white/5"
-              style={{ color: 'rgba(255,255,255,0.3)' }}>
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
+        {active.sort((a, b) => b.created_at - a.created_at).map(item => {
+          const itemRemindAt = item.meta?.remind_at
+          const isOverdue = itemRemindAt && itemRemindAt <= Date.now()
+          return (
+            <div key={item.id} className="flex items-center gap-3 p-3 rounded-2xl"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <button onClick={() => onToggle(item.id)}
+                className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center active:scale-90 transition-transform"
+                style={{ borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' }} />
+              <span className="flex-1 text-sm text-white/90 leading-snug">{item.title}</span>
+              {config.hasAmount && item.meta?.amount != null && (
+                <span className="flex-shrink-0 text-xs font-semibold" style={{ color: '#a78bfa' }}>
+                  ₹{Number(item.meta.amount).toLocaleString()}
+                </span>
+              )}
+              {itemRemindAt && (
+                <button
+                  onClick={() => onSetReminder?.(item.id, null)}
+                  className="flex-shrink-0 flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-lg"
+                  style={{
+                    background: isOverdue ? 'rgba(244,63,94,0.18)' : 'rgba(255,255,255,0.07)',
+                    color:      isOverdue ? '#fb7185' : 'rgba(255,255,255,0.4)',
+                  }}
+                  title="Tap to clear reminder"
+                >
+                  <Bell size={11} />
+                  {formatReminder(itemRemindAt)}
+                </button>
+              )}
+              <button onClick={() => onDelete(item.id)} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl active:bg-white/5"
+                style={{ color: 'rgba(255,255,255,0.3)' }}>
+                <Trash2 size={16} />
+              </button>
+            </div>
+          )
+        })}
       </div>
 
       {done.length > 0 && (
@@ -259,6 +333,11 @@ function GenericUtility({ utilityId, config, items, onAdd, onToggle, onDelete })
               <span className="flex-1 text-sm line-through" style={{ color: 'rgba(255,255,255,0.35)' }}>
                 {item.title}
               </span>
+              {config.hasAmount && item.meta?.amount != null && (
+                <span className="flex-shrink-0 text-xs" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                  ₹{Number(item.meta.amount).toLocaleString()}
+                </span>
+              )}
               <button onClick={() => onDelete(item.id)} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl active:bg-white/5"
                 style={{ color: 'rgba(255,255,255,0.2)' }}>
                 <Trash2 size={16} />
@@ -290,10 +369,11 @@ const SECTIONS = [
   { id: 'evening',   label: '🌙 Evening',   hint: 'Can wait until later tonight'            },
 ]
 
-function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
+function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus, onSetReminder }) {
   const [section, setSection]   = useState('mustdo')
   const [title, setTitle]       = useState('')
   const [tag, setTag]           = useState('other')
+  const [remindAt, setRemindAt] = useState('')
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [showDone, setShowDone] = useState(false)
 
@@ -311,8 +391,11 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
 
   async function handleAdd() {
     if (!title.trim()) return
-    await onAdd(title.trim(), tag, 'today', { todaySection: section })
+    const extra = { todaySection: section }
+    if (remindAt) extra.remind_at = new Date(remindAt).getTime()
+    await onAdd(title.trim(), tag, 'today', extra)
     setTitle('')
+    setRemindAt('')
     setShowTagPicker(false)
   }
 
@@ -386,6 +469,21 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
             ))}
           </div>
         )}
+        <div className="flex items-center gap-2 mt-2">
+          <Bell size={13} style={{ color: 'rgba(255,255,255,0.35)' }} />
+          <input
+            type="datetime-local"
+            value={remindAt}
+            onChange={e => setRemindAt(e.target.value)}
+            className="flex-1 bg-transparent text-xs outline-none px-2 py-1.5 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
+          />
+          {remindAt && (
+            <button onClick={() => setRemindAt('')} className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {sectionItems.length === 0 && sectionDone.length === 0 && (
@@ -399,6 +497,7 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
       <div className="flex flex-col gap-2 mt-4">
         {sectionItems.sort((a, b) => b.created_at - a.created_at).map(item => {
           const tagInfo = TODAY_TAGS.find(t => t.id === item.tag)
+          const isOverdue = item.remind_at && item.remind_at <= Date.now()
           return (
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-2xl"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -407,6 +506,19 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
                 style={{ borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' }} />
               <span className="text-base leading-none flex-shrink-0">{tagInfo?.emoji || '📌'}</span>
               <span className="flex-1 text-sm text-white/90 leading-snug">{item.title}</span>
+              {item.remind_at && (
+                <button
+                  onClick={() => onSetReminder?.(item.id, null)}
+                  className="flex-shrink-0 flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-lg"
+                  style={{
+                    background: isOverdue ? 'rgba(244,63,94,0.18)' : 'rgba(255,255,255,0.07)',
+                    color:      isOverdue ? '#fb7185' : 'rgba(255,255,255,0.4)',
+                  }}
+                  title="Tap to clear reminder">
+                  <Bell size={11} />
+                  {formatReminder(item.remind_at)}
+                </button>
+              )}
               {/* Move back to backlog */}
               <button onClick={() => onUpdateStatus(item.id, 'backlog')}
                 className="flex-shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-lg"
@@ -455,8 +567,8 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus }) {
 
 export default function UtilitiesScreen({
   errandRuns, onSaveErrand, onDeleteErrand,
-  backlog, onAddBacklog, onDeleteBacklog, onUpdateBacklogStatus,
-  utilityItems, onAddUtilityItem, onToggleUtilityItem, onDeleteUtilityItem,
+  backlog, onAddBacklog, onDeleteBacklog, onUpdateBacklogStatus, onSetBacklogReminder,
+  utilityItems, onAddUtilityItem, onToggleUtilityItem, onDeleteUtilityItem, onSetUtilityItemReminder,
   checklists, onSaveChecklist, onDeleteChecklist,
 }) {
   const [activeUtility, setActiveUtility] = useState(null)
@@ -534,6 +646,7 @@ export default function UtilitiesScreen({
           onAdd={onAddBacklog}
           onDelete={onDeleteBacklog}
           onUpdateStatus={onUpdateBacklogStatus}
+          onSetReminder={onSetBacklogReminder}
         />
       )
     }
@@ -544,6 +657,7 @@ export default function UtilitiesScreen({
           onAdd={onAddBacklog}
           onDelete={onDeleteBacklog}
           onUpdateStatus={onUpdateBacklogStatus}
+          onSetReminder={onSetBacklogReminder}
         />
       )
     }
@@ -567,6 +681,7 @@ export default function UtilitiesScreen({
           onAdd={onAddUtilityItem}
           onToggle={onToggleUtilityItem}
           onDelete={onDeleteUtilityItem}
+          onSetReminder={onSetUtilityItemReminder}
         />
       )
     }

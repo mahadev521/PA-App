@@ -410,13 +410,11 @@ export default function ErrandRunScreen({ runs, onSaveRun, onDeleteRun }) {
                   <MessageSquare size={15} />
                 </button>
 
-                {/* Delete (active runs only) */}
-                {!currentRun.completed && (
-                  <button onClick={() => removeStop(stop.id)} className="flex-shrink-0"
-                    style={{ color: 'rgba(255,255,255,0.2)' }}>
-                    <Trash2 size={14} />
-                  </button>
-                )}
+                {/* Delete */}
+                <button onClick={() => removeStop(stop.id)} className="flex-shrink-0"
+                  style={{ color: 'rgba(255,255,255,0.2)' }}>
+                  <Trash2 size={14} />
+                </button>
               </div>
 
               {/* Comment display */}

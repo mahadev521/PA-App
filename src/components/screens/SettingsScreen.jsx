@@ -1,8 +1,16 @@
 import { useState, useRef } from 'react'
-import { User, Download, Upload, Trash2, Info, ChevronRight } from 'lucide-react'
+import { User, Download, Upload, Trash2, Info, ChevronRight, Bell } from 'lucide-react'
 import { exportData, importData, clearAllEntries } from '../../utils/storage'
+import { notificationsSupported } from '../../utils/notifications'
 
-export default function SettingsScreen({ profile, onUpdateProfile, onReload }) {
+const PERMISSION_LABEL = {
+  granted: 'Enabled',
+  denied: 'Blocked — enable in browser settings',
+  default: 'Not enabled',
+  unsupported: 'Not supported on this device/browser',
+}
+
+export default function SettingsScreen({ profile, onUpdateProfile, onReload, notificationPermission, onRequestNotificationPermission }) {
   const [name, setName] = useState(profile?.name || '')
   const [saved, setSaved] = useState(false)
   const [showReset, setShowReset] = useState(false)
@@ -79,6 +87,23 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload }) {
           <ChevronRight size={14} className="text-gray-500" />
         </button>
         <input ref={fileRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
+      </div>
+
+      {/* Notifications */}
+      <div className="card space-y-2">
+        <p className="section-title">Notifications</p>
+        <div className="flex items-center justify-between p-3 bg-elevated rounded-xl">
+          <span className="text-sm text-white flex items-center gap-2">
+            <Bell size={16} className="text-accent" /> Reminders
+          </span>
+          <span className="text-xs text-gray-400">{PERMISSION_LABEL[notificationPermission] || PERMISSION_LABEL.default}</span>
+        </div>
+        {notificationsSupported() && notificationPermission !== 'granted' && notificationPermission !== 'denied' && (
+          <button onClick={onRequestNotificationPermission} className="btn-primary w-full">
+            Enable reminders
+          </button>
+        )}
+        <p className="text-[10px] text-gray-500">Reminders you set on Backlog, Today, and Utility items fire while this app is open on this device.</p>
       </div>
 
       {/* Deploy to GitHub Pages */}
