@@ -32,12 +32,10 @@ const EMPTY = {
   paid_yourself_first: false,
   avoided_impulse: false,
   financial_learning: false,
-  abundance_note: '',
   // Family
   family_time: 0,
   temper_controlled: false,
   family_kindness: false,
-  family_gratitude: '',
   // Professional
   deep_work_hours: 0,
   learning_minutes: 0,
@@ -47,7 +45,6 @@ const EMPTY = {
   morning_ritual: false,
   reflection_completed: false,
   daily_win: '',
-  diary_done: false,
 }
 
 function offsetDate(dateStr, days) {
@@ -487,13 +484,6 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
         <Toggle label="Pay yourself first (SIP/investment ran)" emoji="📈" field="paid_yourself_first" value={form.paid_yourself_first} onChange={set} />
         <Toggle label="No impulse buy today" emoji="🚫" field="avoided_impulse" value={form.avoided_impulse} onChange={set} />
         <Toggle label="Financial education (read/watch/listen)" emoji="📚" field="financial_learning" value={form.financial_learning} onChange={set} />
-        <div>
-          <label className="text-xs text-gray-400 block mb-1">Wealth note (event, win, or insight)</label>
-          <input type="text" placeholder="e.g. SIP deducted, saved ₹500, read one chapter..."
-            value={form.abundance_note || ''}
-            onChange={e => set('abundance_note', e.target.value)}
-            className="w-full bg-elevated rounded-2xl px-4 py-3.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
-        </div>
         <p className="text-[10px] text-gray-600">Log big financial decisions or events in Journal → Wealth category</p>
       </Section>
 
@@ -510,14 +500,6 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
 
         <Toggle label="Controlled my temper today" emoji="🧘" field="temper_controlled" value={form.temper_controlled} onChange={set} />
         <Toggle label="Did something kind for family" emoji="💛" field="family_kindness" value={form.family_kindness} onChange={set} />
-
-        <div>
-          <label className="text-xs text-gray-400 block mb-1">Family gratitude (name one person, say why)</label>
-          <input type="text" placeholder="e.g. Grateful for Mom because she called and listened..."
-            value={form.family_gratitude || ''}
-            onChange={e => set('family_gratitude', e.target.value)}
-            className="w-full bg-elevated rounded-2xl px-4 py-3.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
-        </div>
       </Section>
 
       {/* ─── PROFESSIONAL ────────────────────────────────────────── */}
@@ -556,7 +538,6 @@ export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onTogg
             onChange={e => set('daily_win', e.target.value)}
             className="w-full bg-elevated rounded-2xl px-4 py-3.5 text-sm text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-accent" />
         </div>
-        <Toggle label="Wrote in my physical diary" emoji="📓" field="diary_done" value={form.diary_done} onChange={set} />
       </Section>
 
     </div>

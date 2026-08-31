@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { User, Download, Upload, Trash2, Info, ChevronRight, Bell } from 'lucide-react'
+import { User, Download, Upload, Trash2, Info, ChevronRight, Bell, X, Lock } from 'lucide-react'
 import { exportData, importData, clearAllEntries } from '../../utils/storage'
 import { notificationsSupported } from '../../utils/notifications'
 
@@ -16,20 +16,69 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
   const [showReset, setShowReset] = useState(false)
   const fileRef = useRef()
 
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportPass, setExportPass] = useState('')
+  const [exportPassConfirm, setExportPassConfirm] = useState('')
+  const [exportError, setExportError] = useState('')
+
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importPass, setImportPass] = useState('')
+  const [importError, setImportError] = useState('')
+  const [pendingImportText, setPendingImportText] = useState(null)
+
   async function handleSaveName() {
     await onUpdateProfile({ name })
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
   }
 
-  async function handleImport(e) {
+  async function handleExportSubmit() {
+    setExportError('')
+    if (!exportPass.trim()) { setExportError('Enter a passphrase.'); return }
+    if (exportPass !== exportPassConfirm) { setExportError("Passphrases don't match."); return }
+    try {
+      await exportData(exportPass)
+      setShowExportModal(false)
+      setExportPass('')
+      setExportPassConfirm('')
+    } catch {
+      setExportError('Export failed. Please try again.')
+    }
+  }
+
+  async function handleFileSelected(e) {
     const file = e.target.files[0]
     if (!file) return
     const text = await file.text()
-    await importData(text)
-    onReload()
-    alert('Data imported successfully!')
     e.target.value = ''
+    let parsed
+    try { parsed = JSON.parse(text) } catch { alert('That file is not a valid backup.'); return }
+
+    if (parsed.__encrypted) {
+      setPendingImportText(text)
+      setImportError('')
+      setImportPass('')
+      setShowImportModal(true)
+    } else {
+      await importData(text)
+      onReload()
+      alert('Data imported successfully!')
+    }
+  }
+
+  async function handleImportSubmit() {
+    setImportError('')
+    if (!importPass.trim()) { setImportError('Enter the passphrase.'); return }
+    try {
+      await importData(pendingImportText, importPass)
+      setShowImportModal(false)
+      setImportPass('')
+      setPendingImportText(null)
+      onReload()
+      alert('Data imported successfully!')
+    } catch {
+      setImportError('Incorrect password or corrupted file.')
+    }
   }
 
   async function handleReset() {
@@ -69,11 +118,11 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
       <div className="card space-y-2">
         <p className="section-title">Data</p>
         <button
-          onClick={exportData}
+          onClick={() => { setExportError(''); setShowExportModal(true) }}
           className="flex items-center justify-between w-full p-3 bg-elevated rounded-xl"
         >
           <span className="text-sm text-white flex items-center gap-2">
-            <Download size={16} className="text-emerald" /> Export backup (JSON)
+            <Download size={16} className="text-emerald" /> Export backup (encrypted)
           </span>
           <ChevronRight size={14} className="text-gray-500" />
         </button>
@@ -86,7 +135,8 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
           </span>
           <ChevronRight size={14} className="text-gray-500" />
         </button>
-        <input ref={fileRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
+        <input ref={fileRef} type="file" accept=".json" onChange={handleFileSelected} className="hidden" />
+        <p className="text-[10px] text-gray-500 px-1">Backups are password-encrypted on your device before saving. Old unencrypted backups can still be imported.</p>
       </div>
 
       {/* Notifications */}
@@ -159,6 +209,53 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
           <span>Jarvis v1.0 · All data stored on your device · <a href="https://github.com" className="text-accent">GitHub Pages</a></span>
         </div>
       </div>
+
+      {/* Export passphrase modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+          style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-[400px] p-5 rounded-3xl space-y-3"
+            style={{ background: 'rgba(17,21,48,0.98)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <div className="flex items-center justify-between">
+              <p className="text-base font-bold text-white flex items-center gap-2"><Lock size={16} /> Encrypt Backup</p>
+              <button onClick={() => setShowExportModal(false)}><X size={18} className="text-gray-400" /></button>
+            </div>
+            <input type="password" placeholder="Passphrase" value={exportPass}
+              onChange={e => setExportPass(e.target.value)}
+              className="w-full rounded-2xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+            <input type="password" placeholder="Confirm passphrase" value={exportPassConfirm}
+              onChange={e => setExportPassConfirm(e.target.value)}
+              className="w-full rounded-2xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+            <p className="text-[11px] text-rose leading-relaxed">
+              If you lose this passphrase, this backup cannot be recovered — there is no reset.
+            </p>
+            {exportError && <p className="text-[11px] text-rose">{exportError}</p>}
+            <button onClick={handleExportSubmit} className="btn-primary w-full">Encrypt &amp; Download</button>
+          </div>
+        </div>
+      )}
+
+      {/* Import passphrase modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+          style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-[400px] p-5 rounded-3xl space-y-3"
+            style={{ background: 'rgba(17,21,48,0.98)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <div className="flex items-center justify-between">
+              <p className="text-base font-bold text-white flex items-center gap-2"><Lock size={16} /> Enter Passphrase</p>
+              <button onClick={() => { setShowImportModal(false); setPendingImportText(null) }}><X size={18} className="text-gray-400" /></button>
+            </div>
+            <input type="password" placeholder="Passphrase" value={importPass}
+              onChange={e => setImportPass(e.target.value)}
+              className="w-full rounded-2xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+            {importError && <p className="text-[11px] text-rose">{importError}</p>}
+            <button onClick={handleImportSubmit} className="btn-primary w-full">Decrypt &amp; Import</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

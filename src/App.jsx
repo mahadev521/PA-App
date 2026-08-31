@@ -49,6 +49,8 @@ export default function App() {
             backlog={app.backlog}
             utilityItems={app.utilityItems}
             errandRuns={app.errandRuns}
+            goals={app.goals}
+            people={app.people}
             onUpdateBacklogStatus={app.updateBacklogStatus}
             onDeleteBacklog={app.removeBacklogItem}
             onSetBacklogReminder={app.setBacklogReminder}
@@ -81,6 +83,10 @@ export default function App() {
             streaks={app.streaks}
             earnedBadges={app.earnedBadges}
             totalXP={app.totalXP}
+            goals={app.goals}
+            onSaveGoal={app.upsertGoal}
+            onDeleteGoal={app.removeGoal}
+            onToggleMilestone={app.toggleMilestone}
           />
         )
       case 'utilities':
@@ -102,6 +108,9 @@ export default function App() {
             checklists={app.checklists}
             onSaveChecklist={app.upsertChecklist}
             onDeleteChecklist={app.removeChecklist}
+            people={app.people}
+            onSavePerson={app.upsertPerson}
+            onDeletePerson={app.removePerson}
           />
         )
       case 'portfolio':

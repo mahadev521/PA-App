@@ -1,12 +1,14 @@
 import { useState, lazy, Suspense } from 'react'
-import { BarChart3, Trophy } from 'lucide-react'
+import { BarChart3, Trophy, Target } from 'lucide-react'
 import ProgressScreen from './ProgressScreen'
 
 const ChartsScreen = lazy(() => import('./ChartsScreen'))
+const GoalsScreen = lazy(() => import('./GoalsScreen'))
 
 const TABS = [
   { id: 'progress', icon: Trophy,    label: 'Progress', gradient: 'linear-gradient(135deg,#d97706,#b45309)' },
   { id: 'charts',   icon: BarChart3, label: 'Charts',   gradient: 'linear-gradient(135deg,#0284c7,#0369a1)' },
+  { id: 'goals',    icon: Target,    label: 'Goals',    gradient: 'linear-gradient(135deg,#7c3aed,#6d28d9)' },
 ]
 
 const Loader = () => (
@@ -16,6 +18,7 @@ const Loader = () => (
 export default function LifeScreen({
   entries,
   levelInfo, streaks, earnedBadges, totalXP,
+  goals, onSaveGoal, onDeleteGoal, onToggleMilestone,
 }) {
   const [mode, setMode] = useState('progress')
 
@@ -67,6 +70,16 @@ export default function LifeScreen({
       {mode === 'charts' && (
         <Suspense fallback={<Loader />}>
           <ChartsScreen entries={entries} embedded />
+        </Suspense>
+      )}
+      {mode === 'goals' && (
+        <Suspense fallback={<Loader />}>
+          <GoalsScreen
+            goals={goals}
+            onSaveGoal={onSaveGoal}
+            onDeleteGoal={onDeleteGoal}
+            onToggleMilestone={onToggleMilestone}
+          />
         </Suspense>
       )}
     </div>

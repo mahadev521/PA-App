@@ -3,11 +3,7 @@
 const BOOL_XP = {
   morning_ritual:       50,
   prayer_done:          30,
-  meditated:            40,  // legacy field
   reflection_completed: 30,
-  journal_written:      20,
-  no_spend_day:         25,  // legacy
-  // new
   paid_yourself_first:  30,
   avoided_impulse:      20,
   financial_learning:   15,
@@ -25,7 +21,6 @@ const RATE_XP = {
   learning_minutes:    { rate: 0.5, cap: 60 },
   pages_read:          { rate: 2,   cap: 50 },
   leetcode_problems:   { rate: 15,  cap: 45 },
-  tasks_completed:     { rate: 5,   cap: 30 },
   god_minutes:         { rate: 0.5, cap: 30 },
   scripture_minutes:   { rate: 0.5, cap: 20 },
   meditation_minutes:  { rate: 0.5, cap: 25 },
@@ -40,9 +35,6 @@ export function calculateDayXP(entry) {
   for (const [key, pts] of Object.entries(BOOL_XP)) {
     if (entry[key] === true) xp += pts
   }
-
-  // investment logged = 20 XP
-  if ((entry.investment_amount || 0) > 0) xp += 20
 
   const sleep = entry.sleep_hours || 0
   if (sleep >= 7 && sleep <= 9) xp += 30
@@ -95,7 +87,7 @@ export function getLevelInfo(totalXP) {
 const STREAK_DEFS = [
   { key: 'logging',        label: 'Daily Log',      emoji: '📝', fn: () => true },
   { key: 'morning_ritual', label: 'Morning Ritual', emoji: '🌅', fn: e => e.morning_ritual === true },
-  { key: 'meditation',     label: 'Meditation',     emoji: '😌', fn: e => e.meditated === true },
+  { key: 'meditation',     label: 'Meditation',     emoji: '😌', fn: e => (e.meditation_minutes || 0) > 0 },
   { key: 'reflection',     label: 'Reflection',     emoji: '✍️', fn: e => e.reflection_completed === true },
   { key: 'prayer',         label: 'Prayer',         emoji: '🙏', fn: e => e.prayer_done === true },
   { key: 'learning',       label: 'Learning',       emoji: '📚', fn: e => (e.learning_minutes || 0) > 0 },
@@ -164,8 +156,6 @@ export const BADGE_DEFS = [
   // Work
   { id: 'deep_worker',     name: 'Deep Worker',     emoji: '🔥', desc: '10 consecutive days 4h+ deep work', cat: 'work' },
   { id: 'focus_machine',   name: 'Focus Machine',   emoji: '🎯', desc: '3h+ deep work for 30 total days',  cat: 'work' },
-  { id: 'task_crusher',    name: 'Task Crusher',    emoji: '✅', desc: '5+ tasks on 5 different days',  cat: 'work' },
-  { id: 'pomodoro_king',   name: 'Pomodoro King',   emoji: '🍅', desc: '50 total pomodoros',             cat: 'work' },
   // Learning
   { id: 'scholar',         name: 'Scholar',         emoji: '📚', desc: '30 consecutive days learning',  cat: 'learning' },
   { id: 'page_turner',     name: 'Page Turner',     emoji: '📖', desc: '500 total pages read',          cat: 'learning' },
@@ -174,9 +164,6 @@ export const BADGE_DEFS = [
   // Spirit
   { id: 'devotion',        name: 'Devotion',        emoji: '🙏', desc: '21 consecutive days prayer',    cat: 'spirit' },
   { id: 'reflector',       name: 'Reflector',       emoji: '✍️', desc: '21 consecutive days reflection',cat: 'spirit' },
-  { id: 'inner_work',      name: 'Inner Work',      emoji: '🌱', desc: '60 total days journaling',      cat: 'spirit' },
-  // Finance
-  { id: 'saver',           name: 'Saver',           emoji: '💰', desc: '5 consecutive no-spend days',   cat: 'finance' },
 ]
 
 export function evaluateBadges(entries) {
@@ -195,24 +182,22 @@ export function evaluateBadges(entries) {
   if (maxConsecutive(sorted, e => { const s = e.sleep_hours||0; return s>=7&&s<=9 }) >= 7) earned.add('sleep_guardian')
   if (maxConsecutive(sorted, e => (e.steps || 0) >= 8000) >= 7) earned.add('step_master')
 
-  // active_week: any ISO week with 5+ movement days
+  // active_week: any ISO week with 5+ workout days
   const weekMap = {}
   for (const e of sorted) {
     const wk = getWeekKey(e.date)
     if (!weekMap[wk]) weekMap[wk] = 0
-    if ((e.movement_minutes || 0) > 0 || (e.workout_minutes || 0) > 0) weekMap[wk]++
+    if ((e.workout_minutes || 0) > 0) weekMap[wk]++
   }
   if (Object.values(weekMap).some(v => v >= 5)) earned.add('active_week')
 
-  if (maxConsecutive(sorted, e => e.meditated === true) >= 7) earned.add('zen_mind')
+  if (maxConsecutive(sorted, e => (e.meditation_minutes || 0) > 0) >= 7) earned.add('zen_mind')
   if (maxConsecutive(sorted, e => e.morning_ritual === true) >= 14) earned.add('sunrise_warrior')
   if (sorted.filter(e => e.reflection_completed === true).length >= 30) earned.add('resilient')
   if (sorted.filter(e => (e.energy_score || 0) >= 9).length >= 5) earned.add('peak_state')
 
   if (maxConsecutive(sorted, e => (e.deep_work_hours || 0) >= 4) >= 10) earned.add('deep_worker')
   if (sorted.filter(e => (e.deep_work_hours || 0) >= 3).length >= 30) earned.add('focus_machine')
-  if (sorted.filter(e => (e.tasks_completed || 0) >= 5).length >= 5) earned.add('task_crusher')
-  if (sorted.reduce((s, e) => s + (e.pomodoros_completed || 0), 0) >= 50) earned.add('pomodoro_king')
 
   if (maxConsecutive(sorted, e => (e.learning_minutes || 0) > 0) >= 30) earned.add('scholar')
   if (sorted.reduce((s, e) => s + (e.pages_read || 0), 0) >= 500) earned.add('page_turner')
@@ -221,9 +206,6 @@ export function evaluateBadges(entries) {
 
   if (maxConsecutive(sorted, e => e.prayer_done === true) >= 21) earned.add('devotion')
   if (maxConsecutive(sorted, e => e.reflection_completed === true) >= 21) earned.add('reflector')
-  if (sorted.filter(e => e.journal_written === true).length >= 60) earned.add('inner_work')
-
-  if (maxConsecutive(sorted, e => e.no_spend_day === true) >= 5) earned.add('saver')
 
   return earned
 }
