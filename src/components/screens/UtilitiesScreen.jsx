@@ -3,7 +3,9 @@ import { Plus, Trash2, Check, ChevronLeft, Bell } from 'lucide-react'
 import ErrandRunScreen from './utilities/ErrandRunScreen'
 import BacklogScreen   from './utilities/BacklogScreen'
 import PeopleScreen    from './utilities/PeopleScreen'
+import DecisionsScreen from './utilities/DecisionsScreen'
 import { ChecklistsView } from './utilities/ChecklistsScreen'
+import { haptic } from '../../utils/haptics'
 
 function formatReminder(ts) {
   return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
@@ -11,23 +13,34 @@ function formatReminder(ts) {
 
 // ─── Utility hub config ────────────────────────────────────────────────────
 
+// Grouped so sixteen tiles read as four short lists instead of one wall.
+const GROUPS = [
+  { id: 'now',   label: 'In motion',   hint: 'on a clock'        },
+  { id: 'money', label: 'Money & people', hint: 'owed & owing'   },
+  { id: 'run',   label: 'Keeping it running', hint: 'boring but critical' },
+  { id: 'grow',  label: 'Growth',      hint: 'compounding'       },
+]
+
 const UTILITIES = [
-  { id: 'errand',      title: 'Errand Run',   emoji: '🚗', desc: 'Plan & track stops'       },
-  { id: 'backlog',     title: 'Backlog',       emoji: '📥', desc: 'Second brain inbox'        },
-  { id: 'today',       title: 'Today',         emoji: '🗓️', desc: 'What matters today'        },
-  { id: 'shopping',    title: 'Shopping',      emoji: '📦', desc: 'Things to buy'             },
-  { id: 'money',       title: 'Money',         emoji: '💰', desc: 'Expenses & bills'          },
-  { id: 'people',      title: 'Follow-ups',    emoji: '📞', desc: 'People to contact'         },
-  { id: 'learning',    title: 'Learning',      emoji: '📚', desc: 'What to learn next'        },
-  { id: 'maintenance', title: 'Maintenance',   emoji: '🔧', desc: 'Last done / next due'      },
-  { id: 'travel',      title: 'Travel',        emoji: '🧳', desc: 'Trips & packing'           },
-  { id: 'decisions',   title: 'Decisions',     emoji: '🧠', desc: 'Think it through'          },
-  { id: 'lifeadmin',   title: 'Life Admin',    emoji: '🧹', desc: 'The boring-but-critical stuff' },
-  { id: 'fitness',     title: 'Fitness',       emoji: '🏃', desc: 'Body & training'           },
-  { id: 'spiritual',   title: 'Spiritual',     emoji: '✝️', desc: 'Prayer & reflection'       },
-  { id: 'debts',       title: 'Debts & Spends',emoji: '🧾', desc: 'Track debts & one-off spends' },
-  { id: 'people-crm',  title: 'People',        emoji: '🤝', desc: 'Track what matters with who' },
-  { id: 'checklists',  title: 'Checklists',    emoji: '✅', desc: 'Pre-trip, work, gym & more'  },
+  { id: 'today',       group: 'now',   title: 'Today',         emoji: '🗓️', desc: 'What matters today'        },
+  { id: 'errand',      group: 'now',   title: 'Errand Run',    emoji: '🚗', desc: 'Plan & track stops'        },
+  { id: 'backlog',     group: 'now',   title: 'Backlog',       emoji: '📥', desc: 'Second brain inbox'        },
+  { id: 'shopping',    group: 'now',   title: 'Shopping',      emoji: '📦', desc: 'Things to buy'             },
+
+  { id: 'money',       group: 'money', title: 'Money',         emoji: '💰', desc: 'Expenses & bills'          },
+  { id: 'debts',       group: 'money', title: 'Debts & Spends',emoji: '🧾', desc: 'Track debts & one-off spends' },
+  { id: 'people-crm',  group: 'money', title: 'People',        emoji: '🤝', desc: 'Track what matters with who' },
+  { id: 'people',      group: 'money', title: 'Follow-ups',    emoji: '📞', desc: 'People to contact'         },
+
+  { id: 'maintenance', group: 'run',   title: 'Maintenance',   emoji: '🔧', desc: 'Last done / next due'      },
+  { id: 'lifeadmin',   group: 'run',   title: 'Life Admin',    emoji: '🧹', desc: 'The boring-but-critical stuff' },
+  { id: 'travel',      group: 'run',   title: 'Travel',        emoji: '🧳', desc: 'Trips & packing'           },
+  { id: 'checklists',  group: 'run',   title: 'Checklists',    emoji: '✅', desc: 'Pre-trip, work, gym & more'  },
+
+  { id: 'decisions',   group: 'grow',  title: 'Decisions',     emoji: '🧠', desc: 'Decide, then grade it later' },
+  { id: 'learning',    group: 'grow',  title: 'Learning',      emoji: '📚', desc: 'What to learn next'        },
+  { id: 'fitness',     group: 'grow',  title: 'Fitness',       emoji: '🏃', desc: 'Body & training'           },
+  { id: 'spiritual',   group: 'grow',  title: 'Spiritual',     emoji: '✝️', desc: 'Prayer & reflection'       },
 ]
 
 // ─── Generic utility configs ───────────────────────────────────────────────
@@ -58,8 +71,9 @@ const GENERIC_CONFIGS = {
     ],
   },
   money: {
-    placeholder: 'e.g. ₹450 Dinner  or  Pay credit card…',
+    placeholder: 'e.g. Dinner  or  Pay credit card…',
     push: 'Every rupee untracked is a decision made in the dark.',
+    hasAmount: true,
     sections: [
       { id: 'expense',   label: '💸 Expenses',  hint: 'Log quick expenses'             },
       { id: 'bills',     label: '📋 Bills',     hint: 'Rent, utilities, subscriptions' },
@@ -101,14 +115,6 @@ const GENERIC_CONFIGS = {
       { id: 'before', label: '✈️ Before', hint: 'Bookings, packing, documents' },
       { id: 'during', label: '🗺️ During', hint: 'Places, activities, food'     },
       { id: 'return', label: '🏠 Return', hint: 'Checkout, luggage, pending'   },
-    ],
-  },
-  decisions: {
-    placeholder: 'e.g. Should I buy a new racket?',
-    push: 'An unmade decision is a leak of mental energy. Make it.',
-    sections: [
-      { id: 'open',    label: '🤔 Thinking', hint: 'Decisions you\'re working through' },
-      { id: 'decided', label: '✅ Decided',  hint: 'Decision made + reason'            },
     ],
   },
   lifeadmin: {
@@ -570,11 +576,16 @@ function TodayScreen({ backlog, onAdd, onDelete, onUpdateStatus, onSetReminder }
 export default function UtilitiesScreen({
   errandRuns, onSaveErrand, onDeleteErrand,
   backlog, onAddBacklog, onDeleteBacklog, onUpdateBacklogStatus, onSetBacklogReminder,
-  utilityItems, onAddUtilityItem, onToggleUtilityItem, onDeleteUtilityItem, onSetUtilityItemReminder,
+  utilityItems, onAddUtilityItem, onToggleUtilityItem, onDeleteUtilityItem, onSetUtilityItemReminder, onUpdateUtilityItem,
   checklists, onSaveChecklist, onDeleteChecklist,
   people, onSavePerson, onDeletePerson,
+  initialUtility = null,
 }) {
-  const [activeUtility, setActiveUtility] = useState(null)
+  // `initialUtility` lets search results and Command Center nudges open a
+  // specific tool directly instead of dropping you on the hub.
+  const [activeUtility, setActiveUtility] = useState(
+    UTILITIES.some(u => u.id === initialUtility) ? initialUtility : null
+  )
   const activeConfig = UTILITIES.find(u => u.id === activeUtility)
 
   function pendingCount(utilityId) {
@@ -583,6 +594,14 @@ export default function UtilitiesScreen({
     if (utilityId === 'today')   return (backlog || []).filter(i => (i.status || (i.done ? 'done' : 'backlog')) === 'today').length
     if (utilityId === 'people-crm') {
       return (people || []).reduce((s, p) => s + (p.events || []).filter(e => e.owed && !e.owed.settled).length, 0)
+    }
+    if (utilityId === 'checklists') return (checklists || []).length
+    if (utilityId === 'decisions') {
+      // Only decisions whose review date has arrived are "pending" — the rest
+      // are deliberately parked until then.
+      return (utilityItems || []).filter(
+        i => i.type === 'decisions' && i.meta?.review_at && i.meta.review_at <= Date.now() && !i.meta?.outcome
+      ).length
     }
     return (utilityItems || []).filter(i => i.type === utilityId && !i.done).length
   }
@@ -602,32 +621,44 @@ export default function UtilitiesScreen({
           <p className="text-xs text-gray-500 mt-0.5">Your personal toolkit</p>
         </div>
 
-        <div className="px-4 pb-8 pt-3">
-          <div className="grid grid-cols-2 gap-3">
-            {UTILITIES.map(u => {
-              const cnt = pendingCount(u.id)
-              return (
-                <button
-                  key={u.id}
-                  onClick={() => setActiveUtility(u.id)}
-                  className="flex flex-col items-start p-4 rounded-3xl text-left transition-all active:scale-95"
-                  style={{ background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}
-                >
-                  <div className="flex w-full items-start justify-between mb-3">
-                    <span className="text-3xl leading-none">{u.emoji}</span>
-                    {cnt > 0 && (
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                        style={{ background: 'rgba(124,58,237,0.25)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.25)' }}>
-                        {cnt}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm font-bold text-white leading-tight">{u.title}</p>
-                  <p className="text-[11px] text-gray-500 mt-1 leading-tight">{u.desc}</p>
-                </button>
-              )
-            })}
-          </div>
+        <div className="px-4 pb-8 pt-3 space-y-5">
+          {GROUPS.map(group => {
+            const tools = UTILITIES.filter(u => u.group === group.id)
+            if (!tools.length) return null
+            return (
+              <div key={group.id}>
+                <div className="flex items-baseline justify-between gap-3 mb-2.5">
+                  <p className="section-title mb-0 flex-shrink-0">{group.label}</p>
+                  <p className="text-[10px] truncate" style={{ color: 'rgba(240,244,255,0.24)' }}>{group.hint}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {tools.map(u => {
+                    const cnt = pendingCount(u.id)
+                    return (
+                      <button
+                        key={u.id}
+                        onClick={() => { haptic('tap'); setActiveUtility(u.id) }}
+                        className="flex flex-col items-start p-4 rounded-3xl text-left transition-all active:scale-95"
+                        style={{ background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}
+                      >
+                        <div className="flex w-full items-start justify-between mb-3">
+                          <span className="text-3xl leading-none">{u.emoji}</span>
+                          {cnt > 0 && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                              style={{ background: 'rgba(124,58,237,0.25)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.25)' }}>
+                              {cnt}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm font-bold text-white leading-tight">{u.title}</p>
+                        <p className="text-[11px] text-gray-500 mt-1 leading-tight">{u.desc}</p>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     )
@@ -664,6 +695,16 @@ export default function UtilitiesScreen({
           onDelete={onDeleteBacklog}
           onUpdateStatus={onUpdateBacklogStatus}
           onSetReminder={onSetBacklogReminder}
+        />
+      )
+    }
+    if (activeUtility === 'decisions') {
+      return (
+        <DecisionsScreen
+          items={utilityItems}
+          onAdd={onAddUtilityItem}
+          onUpdate={onUpdateUtilityItem}
+          onDelete={onDeleteUtilityItem}
         />
       )
     }

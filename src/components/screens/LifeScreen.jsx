@@ -19,8 +19,9 @@ export default function LifeScreen({
   entries,
   levelInfo, streaks, earnedBadges, totalXP,
   goals, onSaveGoal, onDeleteGoal, onToggleMilestone,
+  initialMode,
 }) {
-  const [mode, setMode] = useState('progress')
+  const [mode, setMode] = useState(TABS.some(t => t.id === initialMode) ? initialMode : 'progress')
 
   return (
     <div className="bg-base">

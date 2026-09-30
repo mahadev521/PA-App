@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import BottomNav      from './components/layout/BottomNav'
 import HomeScreen     from './components/screens/HomeScreen'
 import DailyScreen    from './components/screens/DailyScreen'
@@ -7,12 +7,43 @@ import SettingsScreen from './components/screens/SettingsScreen'
 import OnboardingScreen from './components/screens/OnboardingScreen'
 import UtilitiesScreen from './components/screens/UtilitiesScreen'
 import PortfolioScreen from './components/screens/PortfolioScreen'
+import AgendaScreen from './components/screens/AgendaScreen'
+import GuideScreen from './components/screens/GuideScreen'
+import GlobalSearch from './components/GlobalSearch'
 import QuickCapture from './components/QuickCapture'
+import { ToastProvider } from './hooks/useToast'
 import { useApp } from './hooks/useApp'
 
 export default function App() {
+  return (
+    <ToastProvider>
+      <AppShell />
+    </ToastProvider>
+  )
+}
+
+function AppShell() {
   const [tab, setTab] = useState('home')
+  // Deep-link targets within a tab: which tool is open, which sub-tab is
+  // selected. Bumping `nonce` re-applies the same target on a repeat jump.
+  const [focus, setFocus] = useState({ utility: null, mode: null, date: null, nonce: 0 })
+  const [overlay, setOverlay] = useState(null)  // 'search' | 'agenda' | 'guide'
   const app = useApp()
+
+  /** Single entry point for every in-app jump, including from search results. */
+  const navigate = useCallback((target, utility = null) => {
+    const nav = typeof target === 'string' ? { tab: target, utility } : (target || {})
+    if (nav.tab === 'agenda') { setOverlay('agenda'); return }
+    if (nav.tab === 'guide')  { setOverlay('guide'); return }
+    setFocus(f => ({
+      utility: nav.utility ?? null,
+      mode: nav.mode ?? null,
+      date: nav.date ?? null,
+      nonce: f.nonce + 1,
+    }))
+    setTab(nav.tab || 'home')
+    setOverlay(null)
+  }, [])
 
   if (app.loading) {
     return (
@@ -40,12 +71,11 @@ export default function App() {
             levelInfo={app.levelInfo}
             streaks={app.streaks}
             todayEntry={app.todayEntry}
-            todayXP={app.todayXP}
             logStreak={app.logStreak}
             profile={app.profile}
             onSave={app.logEntry}
             entries={app.entries}
-            onNavigate={setTab}
+            onNavigate={navigate}
             backlog={app.backlog}
             utilityItems={app.utilityItems}
             errandRuns={app.errandRuns}
@@ -59,11 +89,16 @@ export default function App() {
             onDeleteUtilityItem={app.removeUtilityItem}
             onAddExperience={app.addExperience}
             onUpdateProfile={app.updateProfile}
+            onOpenSearch={() => setOverlay('search')}
+            onOpenAgenda={() => setOverlay('agenda')}
           />
         )
       case 'daily':
         return (
           <DailyScreen
+            key={`daily-${focus.nonce}`}
+            initialMode={focus.mode}
+            initialDate={focus.date}
             todayEntry={app.todayEntry}
             onSave={app.logEntry}
             tasks={app.tasks}
@@ -78,6 +113,8 @@ export default function App() {
       case 'life':
         return (
           <LifeScreen
+            key={`life-${focus.nonce}`}
+            initialMode={focus.mode}
             entries={app.entries}
             levelInfo={app.levelInfo}
             streaks={app.streaks}
@@ -92,6 +129,8 @@ export default function App() {
       case 'utilities':
         return (
           <UtilitiesScreen
+            key={`utilities-${focus.nonce}`}
+            initialUtility={focus.utility}
             errandRuns={app.errandRuns}
             onSaveErrand={app.upsertErrandRun}
             onDeleteErrand={app.removeErrandRun}
@@ -105,6 +144,7 @@ export default function App() {
             onToggleUtilityItem={app.toggleUtilityItem}
             onDeleteUtilityItem={app.removeUtilityItem}
             onSetUtilityItemReminder={app.setUtilityItemReminder}
+            onUpdateUtilityItem={app.upsertUtilityItem}
             checklists={app.checklists}
             onSaveChecklist={app.upsertChecklist}
             onDeleteChecklist={app.removeChecklist}
@@ -129,6 +169,7 @@ export default function App() {
             onReload={app.reload}
             notificationPermission={app.notificationPermission}
             onRequestNotificationPermission={app.requestNotificationPermission}
+            onOpenGuide={() => setOverlay('guide')}
           />
         )
       default:
@@ -145,8 +186,33 @@ export default function App() {
         style={{ paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' }}>
         {renderScreen()}
       </div>
-      <BottomNav active={tab} onChange={setTab} />
-      <QuickCapture onAdd={app.addBacklogItem} />
+      <BottomNav active={tab} onChange={navigate} />
+      <QuickCapture onAddBacklog={app.addBacklogItem} onAddUtilityItem={app.addUtilityItem} />
+
+      {overlay === 'search' && (
+        <GlobalSearch
+          data={{
+            backlog: app.backlog, utilityItems: app.utilityItems, experiences: app.experiences,
+            goals: app.goals, people: app.people, checklists: app.checklists,
+            errandRuns: app.errandRuns, investments: app.investments, entries: app.entries,
+          }}
+          onNavigate={navigate}
+          onClose={() => setOverlay(null)}
+        />
+      )}
+
+      {overlay === 'agenda' && (
+        <AgendaScreen
+          backlog={app.backlog}
+          utilityItems={app.utilityItems}
+          goals={app.goals}
+          people={app.people}
+          onNavigate={navigate}
+          onClose={() => setOverlay(null)}
+        />
+      )}
+
+      {overlay === 'guide' && <GuideScreen onClose={() => setOverlay(null)} />}
     </div>
   )
 }

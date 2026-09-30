@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
-import { User, Download, Upload, Trash2, Info, ChevronRight, Bell, X, Lock } from 'lucide-react'
+import { Download, Upload, Trash2, Info, ChevronRight, Bell, X, Lock, BookOpen, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { exportData, importData, clearAllEntries } from '../../utils/storage'
 import { notificationsSupported } from '../../utils/notifications'
+import { useToast } from '../../hooks/useToast'
 
 const PERMISSION_LABEL = {
   granted: 'Enabled',
@@ -10,7 +11,27 @@ const PERMISSION_LABEL = {
   unsupported: 'Not supported on this device/browser',
 }
 
-export default function SettingsScreen({ profile, onUpdateProfile, onReload, notificationPermission, onRequestNotificationPermission }) {
+const DAY_MS = 864e5
+
+function backupHealth(lastBackupAt) {
+  if (!lastBackupAt) {
+    return { tone: 'bad', text: 'Never backed up', detail: 'Everything lives only in this browser. Clearing site data would erase it all.' }
+  }
+  const days = Math.floor((Date.now() - lastBackupAt) / DAY_MS)
+  const when = new Date(lastBackupAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+  if (days <= 7)  return { tone: 'good', text: `Backed up ${days === 0 ? 'today' : `${days}d ago`}`, detail: `Last backup ${when}.` }
+  if (days <= 21) return { tone: 'warn', text: `Backed up ${days}d ago`, detail: `Last backup ${when}. Worth refreshing.` }
+  return { tone: 'bad', text: `${days} days since last backup`, detail: `Last backup ${when}. Anything logged since then exists in one place only.` }
+}
+
+const HEALTH_TONE = {
+  good: { color: '#10b981', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.26)', Icon: ShieldCheck },
+  warn: { color: '#f59e0b', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.26)', Icon: ShieldAlert },
+  bad:  { color: '#f43f5e', bg: 'rgba(244,63,94,0.10)',  border: 'rgba(244,63,94,0.26)',  Icon: ShieldAlert },
+}
+
+export default function SettingsScreen({ profile, onUpdateProfile, onReload, notificationPermission, onRequestNotificationPermission, onOpenGuide }) {
+  const { toast } = useToast()
   const [name, setName] = useState(profile?.name || '')
   const [saved, setSaved] = useState(false)
   const [showReset, setShowReset] = useState(false)
@@ -41,6 +62,9 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
       setShowExportModal(false)
       setExportPass('')
       setExportPassConfirm('')
+      // exportData stamps last_backup_at; reload so the health badge updates.
+      await onReload()
+      toast('Encrypted backup downloaded', { variant: 'success' })
     } catch {
       setExportError('Export failed. Please try again.')
     }
@@ -52,7 +76,10 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
     const text = await file.text()
     e.target.value = ''
     let parsed
-    try { parsed = JSON.parse(text) } catch { alert('That file is not a valid backup.'); return }
+    try { parsed = JSON.parse(text) } catch {
+      toast('That file is not a valid backup', { variant: 'error' })
+      return
+    }
 
     if (parsed.__encrypted) {
       setPendingImportText(text)
@@ -62,7 +89,7 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
     } else {
       await importData(text)
       onReload()
-      alert('Data imported successfully!')
+      toast('Backup imported', { variant: 'success' })
     }
   }
 
@@ -75,7 +102,7 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
       setImportPass('')
       setPendingImportText(null)
       onReload()
-      alert('Data imported successfully!')
+      toast('Backup imported', { variant: 'success' })
     } catch {
       setImportError('Incorrect password or corrupted file.')
     }
@@ -85,12 +112,29 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
     await clearAllEntries()
     onReload()
     setShowReset(false)
-    alert('All entries deleted.')
+    toast('All daily entries deleted', { variant: 'warn' })
   }
+
+  const health = backupHealth(profile?.last_backup_at)
+  const tone = HEALTH_TONE[health.tone]
 
   return (
     <div className="screen space-y-5 animate-fade-in">
       <h1 className="text-2xl font-black text-white">Settings</h1>
+
+      {/* How to use this app */}
+      <button onClick={onOpenGuide}
+        className="card-elevated w-full flex items-center gap-3 text-left active:scale-[0.99] transition-transform">
+        <span className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ background: 'rgba(124,58,237,0.2)' }}>
+          <BookOpen size={18} style={{ color: '#a78bfa' }} />
+        </span>
+        <span className="flex-1">
+          <span className="block text-sm font-bold text-white">How to use this app</span>
+          <span className="block text-[11px] text-gray-400">The daily, weekly and monthly loops — and why each one pays off</span>
+        </span>
+        <ChevronRight size={15} className="text-gray-500 flex-shrink-0" />
+      </button>
 
       {/* Name */}
       <div className="card space-y-3">
@@ -117,6 +161,16 @@ export default function SettingsScreen({ profile, onUpdateProfile, onReload, not
       {/* Data */}
       <div className="card space-y-2">
         <p className="section-title">Data</p>
+
+        <div className="flex items-start gap-3 p-3 rounded-2xl mb-1"
+          style={{ background: tone.bg, border: `1px solid ${tone.border}` }}>
+          <tone.Icon size={17} style={{ color: tone.color }} className="flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-bold" style={{ color: tone.color }}>{health.text}</p>
+            <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: 'rgba(240,244,255,0.45)' }}>{health.detail}</p>
+          </div>
+        </div>
+
         <button
           onClick={() => { setExportError(''); setShowExportModal(true) }}
           className="flex items-center justify-between w-full p-3 bg-elevated rounded-xl"

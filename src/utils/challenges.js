@@ -92,39 +92,53 @@ export function getTimePulse() {
   return { weekOfYear, daysLeftInMonth, monthName, weekendsLeft, yearPct, daysLeftInYear, isWeekend, dayOfYear }
 }
 
-export function getWiseGreeting(name) {
-  const hour = new Date().getHours()
-  const n = name && name !== 'You' ? name : null
-  const you = n ? n : 'friend'
+// Split into a short headline and a longer rotating line. Cramming both into
+// one heading pushed everything else off the first screen on a phone.
+const SALUTATION = {
+  morning:   'Good morning',
+  afternoon: 'Good afternoon',
+  evening:   'Good evening',
+  night:     'Late one',
+}
 
+const WISDOM = {
+  morning: [
+    'The morning belongs to those who rise for it. Start before the noise does.',
+    'The first hour is the rudder of the day. Set it wisely.',
+    'Aurelius opened every morning with one question: what difficulty will I meet today, and how?',
+    'Nothing you do before noon can be undone by the afternoon. Front-load the hard thing.',
+  ],
+  afternoon: [
+    'Is the frog eaten? If not, the day is not done — refocus.',
+    'Half the day is behind you. Make the second half deliberate.',
+    'Afternoon is when resolve weakens. That is precisely the test.',
+  ],
+  evening: [
+    'The sun is setting and this day will not return. Did it matter?',
+    '"Withdraw into yourself as much as you can." — Seneca. The world will wait.',
+    'What did you do today that your future self will thank you for?',
+  ],
+  night: [
+    'Rest is preparation for tomorrow\'s battle. Protect your sleep.',
+    'The best gift you can give tomorrow-you is a real night of sleep.',
+    'Aurelius wrote every night. Your journal is waiting.',
+  ],
+}
+
+function periodNow(hour) {
+  return hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night'
+}
+
+/** @returns {{ hello: string, line: string }} */
+export function getGreeting(name) {
   const now = new Date()
+  const period = periodNow(now.getHours())
+  const n = name && name !== 'You' ? name : null
   const startOfYear = new Date(now.getFullYear(), 0, 1)
   const day = Math.ceil((now - startOfYear) / 86400000)
-
-  const greetings = {
-    morning: [
-      `The morning belongs to those who rise for it, ${you}.`,
-      `Start before the noise does, ${you}. The day is yours.`,
-      `Aurelius started each morning asking: "What difficulty will I face today, and how will I meet it?" What's yours, ${you}?`,
-      `The first hour is the rudder of the day, ${you}. Set it wisely.`,
-    ],
-    afternoon: [
-      `Midday, ${you}. Is your frog eaten? Refocus if not — the day isn't done.`,
-      `Half your day is behind you, ${you}. Make the second half deliberate.`,
-      `Afternoon is when resolve weakens, ${you}. This is the test.`,
-    ],
-    evening: [
-      `The sun is setting, ${you}. The day will not return. Did it matter?`,
-      `Evening, ${you}. "Withdraw into yourself as much as you can." — Seneca. The world will wait.`,
-      `What did you do today that your future self will thank you for, ${you}?`,
-    ],
-    night: [
-      `Rest is preparation for tomorrow's battle, ${you}. Protect your sleep.`,
-      `The best gift you can give tomorrow's self is a good night's rest, ${you}.`,
-      `Night, ${you}. Aurelius wrote every night. Your diary is waiting.`,
-    ],
+  const lines = WISDOM[period]
+  return {
+    hello: n ? `${SALUTATION[period]}, ${n}` : SALUTATION[period],
+    line: lines[day % lines.length],
   }
-
-  const period = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night'
-  return greetings[period][day % greetings[period].length]
 }

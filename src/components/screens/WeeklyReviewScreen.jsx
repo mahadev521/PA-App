@@ -1,7 +1,71 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { X, ArrowRight, ArrowLeft, Check, Trash2, Bell, PartyPopper } from 'lucide-react'
 
-const STEPS = ['Inbox', 'Reminders', 'Debts', 'Reflect', 'Done']
+const STEPS = ['Week', 'Inbox', 'Reminders', 'Debts', 'Reflect', 'Done']
+
+const DAY_MS = 864e5
+const WEEK_DAYS = 7
+
+// Local date key. toISOString() would shift the window boundary by the UTC
+// offset and pull an extra day into "this week".
+function dayKey(ts) {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// A review that starts with "how was the week?" is a guess. Starting with the
+// numbers means you reflect on what happened, not what you remember.
+function weekStats(entries, now) {
+  // Inclusive window of the last 7 local days: today back through today-6.
+  const since = dayKey(now - (WEEK_DAYS - 1) * DAY_MS)
+  const prevSince = dayKey(now - (2 * WEEK_DAYS - 1) * DAY_MS)
+  const today = dayKey(now)
+  const week = entries.filter(e => e.date >= since && e.date <= today)
+  const prev = entries.filter(e => e.date >= prevSince && e.date < since)
+
+  const avg = (list, key) => {
+    const vals = list.map(e => e[key]).filter(v => typeof v === 'number' && v > 0)
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+  }
+  const sum = (list, key) => list.reduce((s, e) => s + (e[key] || 0), 0)
+
+  return {
+    logged: week.length,
+    rocksSet: week.filter(e => e.big_rock?.trim()).length,
+    rocksDone: week.filter(e => e.big_rock_done).length,
+    deepWork: sum(week, 'deep_work_hours'),
+    deepWorkPrev: sum(prev, 'deep_work_hours'),
+    sleep: avg(week, 'sleep_hours'),
+    sleepPrev: avg(prev, 'sleep_hours'),
+    familyMins: sum(week, 'family_time'),
+    learningMins: sum(week, 'learning_minutes'),
+    wins: week.filter(e => e.daily_win?.trim()).map(e => ({ date: e.date, win: e.daily_win.trim() })),
+  }
+}
+
+function Delta({ now, prev, unit = '', digits = 1 }) {
+  if (now == null || prev == null || prev === 0) return null
+  const diff = now - prev
+  if (Math.abs(diff) < 0.05) return <span className="text-[10px] text-gray-500"> → flat</span>
+  const up = diff > 0
+  return (
+    <span className="text-[10px] font-bold" style={{ color: up ? '#10b981' : '#fb7185' }}>
+      {' '}{up ? '↑' : '↓'}{Math.abs(diff).toFixed(digits)}{unit}
+    </span>
+  )
+}
+
+function StatBox({ label, value, sub, children }) {
+  return (
+    <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: 'rgba(240,244,255,0.34)' }}>{label}</p>
+      <p className="text-lg font-black text-white leading-none">
+        {value}{children}
+      </p>
+      {sub && <p className="text-[10px] mt-1" style={{ color: 'rgba(240,244,255,0.3)' }}>{sub}</p>}
+    </div>
+  )
+}
 
 function backlogStatus(item) {
   return item.status || (item.done ? 'done' : 'backlog')
@@ -28,7 +92,7 @@ function EmptyNote({ text }) {
 }
 
 export default function WeeklyReviewScreen({
-  backlog, utilityItems,
+  backlog, utilityItems, entries = [], goals = [],
   onUpdateBacklogStatus, onDeleteBacklog, onSetBacklogReminder, onSetUtilityItemReminder,
   onToggleUtilityItem, onDeleteUtilityItem, onAddExperience, onUpdateProfile,
   onClose,
@@ -37,6 +101,8 @@ export default function WeeklyReviewScreen({
   const [reflectText, setReflectText] = useState('')
   const now = Date.now()
 
+  const stats = useMemo(() => weekStats(entries, now), [entries, now])
+  const activeGoals = goals.filter(g => g.status !== 'done' && g.status !== 'abandoned')
   const inboxItems = backlog.filter(i => backlogStatus(i) === 'backlog')
   const overdueBacklog = backlog.filter(i => i.remind_at && i.remind_at <= now)
   const overdueUtility = utilityItems.filter(i => i.meta?.remind_at && i.meta.remind_at <= now)
@@ -81,6 +147,45 @@ export default function WeeklyReviewScreen({
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         {step === 0 && (
+          <StepShell title="Your week, in numbers" hint="Facts first. Feelings after.">
+            <div className="grid grid-cols-2 gap-2">
+              <StatBox label="Days logged" value={`${stats.logged}/${WEEK_DAYS}`}
+                sub={stats.logged >= 6 ? 'Consistent' : stats.logged >= 3 ? 'Patchy' : 'Mostly dark'} />
+              <StatBox label="Big rocks moved" value={`${stats.rocksDone}/${stats.rocksSet || 0}`}
+                sub={stats.rocksSet === 0 ? 'None set this week' : stats.rocksDone >= stats.rocksSet * 0.6 ? 'You did the hard thing' : 'Set fewer, finish them'} />
+              <StatBox label="Deep work" value={`${stats.deepWork.toFixed(1)}h`}>
+                <Delta now={stats.deepWork} prev={stats.deepWorkPrev} unit="h" />
+              </StatBox>
+              <StatBox label="Avg sleep" value={stats.sleep ? `${stats.sleep.toFixed(1)}h` : '—'}>
+                <Delta now={stats.sleep} prev={stats.sleepPrev} unit="h" />
+              </StatBox>
+              <StatBox label="Family time" value={`${Math.round(stats.familyMins / 60)}h`}
+                sub={stats.familyMins < 180 ? 'Under 3h all week' : 'Present'} />
+              <StatBox label="Learning" value={`${Math.round(stats.learningMins / 60)}h`}
+                sub={activeGoals.length ? `${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'} open` : 'No goals set'} />
+            </div>
+
+            {stats.wins.length > 0 && (
+              <div className="mt-3">
+                <p className="section-title">🏆 Wins you logged</p>
+                <div className="space-y-1.5">
+                  {stats.wins.map(w => (
+                    <div key={w.date} className="px-3 py-2 rounded-xl text-xs"
+                      style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.18)', color: 'rgba(240,244,255,0.8)' }}>
+                      {w.win}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {stats.logged === 0 && (
+              <EmptyNote text="Nothing logged in the last 7 days — so there's nothing to review yet. Start with the 20-second log on Home." />
+            )}
+          </StepShell>
+        )}
+
+        {step === 1 && (
           <StepShell title="Triage your inbox" hint="Everything you've captured but haven't sorted yet.">
             {inboxItems.length === 0 && <EmptyNote text="Inbox is empty. Nice." />}
             <div className="space-y-2">
@@ -107,7 +212,7 @@ export default function WeeklyReviewScreen({
           </StepShell>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <StepShell title="Clear stale reminders" hint="Reminders that already came due.">
             {overdueBacklog.length === 0 && overdueUtility.length === 0 && <EmptyNote text="No overdue reminders." />}
             <div className="space-y-2">
@@ -151,7 +256,7 @@ export default function WeeklyReviewScreen({
           </StepShell>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <StepShell title="Debts & ad-hoc spends" hint="Anything settled since last time?">
             {debtItems.length === 0 && <EmptyNote text="No pending debts." />}
             {debtItems.length > 0 && (
@@ -180,7 +285,7 @@ export default function WeeklyReviewScreen({
           </StepShell>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <StepShell title="Reflect" hint="One thing worth carrying into next week (optional).">
             <textarea
               value={reflectText}
@@ -194,7 +299,7 @@ export default function WeeklyReviewScreen({
           </StepShell>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <StepShell title="All set">
             <div className="card flex items-center gap-3 border border-emerald/20 bg-emerald/5">
               <PartyPopper size={22} className="text-emerald flex-shrink-0" />

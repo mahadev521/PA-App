@@ -294,9 +294,12 @@ function WaterBar({ value, onChange }) {
 
 // ─── Screen ───────────────────────────────────────────────────────
 
-export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onToggleTask, onDeleteTask, embedded = false }) {
+export default function LogScreen({ todayEntry, onSave, tasks, onAddTask, onToggleTask, onDeleteTask, embedded = false, initialDate }) {
   const today = todayStr()
-  const [selectedDate, setSelectedDate] = useState(today)
+  // A search result for a past Big Rock lands you straight on that day.
+  const [selectedDate, setSelectedDate] = useState(
+    initialDate && initialDate <= today ? initialDate : today
+  )
   const [form, setForm] = useState({ ...EMPTY, ...(todayEntry || {}) })
   const [saveStatus, setSaveStatus] = useState('idle')
   const isToday = selectedDate === today

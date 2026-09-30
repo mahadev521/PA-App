@@ -1,20 +1,26 @@
-import { useMemo, useState } from 'react'
-import { Zap, Plus, Check, Settings, ChevronRight, PartyPopper } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Plus, Check, Settings, ChevronRight, PartyPopper, Search, CalendarDays, ChevronDown, ChevronUp } from 'lucide-react'
 import { todayStr } from '../../utils/gamification'
-import { getDailyChallenge, getTimePulse, getWiseGreeting } from '../../utils/challenges'
+import { getDailyChallenge, getTimePulse, getGreeting } from '../../utils/challenges'
 import { getSmartInsights } from '../../utils/analytics'
 import { getPendingFeed } from '../../utils/commandCenter'
+import { buildAgenda, agendaCounts } from '../../utils/agenda'
+import { haptic } from '../../utils/haptics'
+import QuickLogStrip from '../QuickLogStrip'
 import WeeklyReviewScreen from './WeeklyReviewScreen'
 
 
 function calcScores(e) {
   if (!e) return { god: 0, health: 0, wealth: 0, family: 0, pro: 0 }
+  // Rounded on the way out — these are rendered as bare numbers in the radar
+  // legend, where an unrounded 66.66666666666666 blows up the layout.
+  const clamp = v => Math.round(Math.min(100, Math.max(0, v)))
   return {
-    god:    Math.min(100, (e.prayer_done?40:0) + Math.min(40,(e.god_minutes||0)/30*40) + ((e.meditation_minutes||0)>0?20:0)),
-    health: Math.min(100, ((e.sleep_hours>=7&&e.sleep_hours<=9)?25:0) + ((e.water_liters>=2)?25:0) + ((e.workout_minutes>0)?25:0) + ((e.steps>=8000)?25:0)),
-    wealth: Math.min(100, (e.paid_yourself_first?40:0) + (e.avoided_impulse?30:0) + (e.financial_learning?30:0)),
-    family: Math.min(100, Math.min(100,(e.family_time||0)/60*100)),
-    pro:    Math.min(100, ((e.deep_work_hours||0)/8*50) + Math.min(25,(e.learning_minutes||0)/60*25) + Math.min(25,(e.tasks_completed||0)/10*25)),
+    god:    clamp((e.prayer_done?40:0) + Math.min(40,(e.god_minutes||0)/30*40) + ((e.meditation_minutes||0)>0?20:0)),
+    health: clamp(((e.sleep_hours>=7&&e.sleep_hours<=9)?25:0) + ((e.water_liters>=2)?25:0) + ((e.workout_minutes>0)?25:0) + ((e.steps>=8000)?25:0)),
+    wealth: clamp((e.paid_yourself_first?40:0) + (e.avoided_impulse?30:0) + (e.financial_learning?30:0)),
+    family: clamp((e.family_time||0)/60*100),
+    pro:    clamp(((e.deep_work_hours||0)/8*50) + Math.min(25,(e.learning_minutes||0)/60*25) + Math.min(25,(e.tasks_completed||0)/10*25)),
   }
 }
 
@@ -159,6 +165,7 @@ function DailyChallenge({ todayEntry, onSave }) {
 
   async function toggle() {
     if (!onSave) return
+    haptic(done ? 'tap' : 'success')
     await onSave({ ...(todayEntry || {}), date: todayStr(), challenge_done: !done })
   }
 
@@ -300,6 +307,82 @@ function DirectionScores({ scores, todayEntry }) {
   )
 }
 
+// ─── Big Rock — editable straight from Home ────────────────────────
+// Previously this lived four taps deep in Daily → Log. The one thing that
+// decides whether a day mattered belongs on the first screen.
+
+function BigRock({ todayEntry, onSave, wisdom }) {
+  const saved = todayEntry?.big_rock || ''
+  const [value, setValue] = useState(saved)
+  const [editing, setEditing] = useState(false)
+  const done = !!todayEntry?.big_rock_done
+
+  // Keep in sync when the entry loads or changes elsewhere, but never stomp
+  // on what the user is actively typing.
+  useEffect(() => { if (!editing) setValue(saved) }, [saved, editing])
+
+  async function commit() {
+    setEditing(false)
+    if (value.trim() === saved.trim()) return
+    await onSave({ ...(todayEntry || {}), date: todayStr(), big_rock: value.trim() })
+  }
+
+  async function toggleDone() {
+    if (!saved.trim()) return
+    haptic(done ? 'tap' : 'success')
+    await onSave({ ...(todayEntry || {}), date: todayStr(), big_rock_done: !done })
+  }
+
+  return (
+    <div className="card-hero space-y-2.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(167,139,250,0.7)' }}>
+          🎯 Today's One Big Rock
+        </span>
+        {saved.trim() && (
+          <button onClick={toggleDone}
+            className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg active:scale-95 transition-transform"
+            style={{
+              background: done ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.07)',
+              color: done ? '#10b981' : 'rgba(255,255,255,0.45)',
+            }}>
+            <Check size={11} strokeWidth={3} /> {done ? 'Done' : 'Mark done'}
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <input
+          autoFocus
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+          placeholder="The hardest, most impactful thing today…"
+          className="w-full rounded-2xl px-3.5 py-3 text-white placeholder-gray-600 outline-none"
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(167,139,250,0.3)', fontSize: 16 }}
+        />
+      ) : (
+        <button onClick={() => setEditing(true)} className="w-full text-left">
+          {saved.trim() ? (
+            <p className={`text-[15px] font-semibold leading-snug ${done ? 'line-through text-gray-500' : 'text-white'}`}>
+              {saved}
+            </p>
+          ) : (
+            <p className="text-sm py-1" style={{ color: 'rgba(240,244,255,0.35)' }}>
+              Tap to name the one thing that would make today count →
+            </p>
+          )}
+        </button>
+      )}
+
+      <p className="text-[11px] italic leading-relaxed" style={{ color: 'rgba(240,244,255,0.3)' }}>
+        {wisdom || '"If you have something left to do, you have no right of thinking about anything else."'}
+      </p>
+    </div>
+  )
+}
+
 // ─── Command Center ────────────────────────────────────────────────
 
 const URGENCY_STYLE = {
@@ -308,8 +391,15 @@ const URGENCY_STYLE = {
   info:    { cls: 'border-sky/20 bg-sky/5',       text: 'text-sky' },
 }
 
+// Above this many nudges the list stops being a priority queue and becomes
+// wallpaper you scroll past. The rest stay one tap away.
+const VISIBLE_NUDGES = 4
+
 function CommandCenter({ feed, onNavigate, onOpenWeeklyReview }) {
+  const [showAll, setShowAll] = useState(false)
   const hasWeeklyReviewNudge = feed.some(item => item.target === 'weekly-review')
+  const visible = showAll ? feed : feed.slice(0, VISIBLE_NUDGES)
+  const hidden = feed.length - visible.length
 
   return (
     <div className="space-y-2">
@@ -323,14 +413,20 @@ function CommandCenter({ feed, onNavigate, onOpenWeeklyReview }) {
         </div>
       ) : (
         <div>
-          <p className="section-title">🎯 Needs Your Attention</p>
+          <div className="flex items-baseline justify-between">
+            <p className="section-title">🎯 Needs Your Attention</p>
+            <span className="section-title" style={{ color: 'rgba(240,244,255,0.25)' }}>{feed.length}</span>
+          </div>
           <div className="space-y-2">
-            {feed.map(item => {
+            {visible.map(item => {
               const style = URGENCY_STYLE[item.urgency]
               return (
                 <button
                   key={item.id}
-                  onClick={() => item.target === 'weekly-review' ? onOpenWeeklyReview() : onNavigate(item.target)}
+                  onClick={() => {
+                    haptic('tap')
+                    item.target === 'weekly-review' ? onOpenWeeklyReview() : onNavigate(item.target, item.utility)
+                  }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition-all active:scale-[0.99] ${style.cls}`}
                 >
                   <span className="text-lg leading-none flex-shrink-0">{item.emoji}</span>
@@ -340,6 +436,16 @@ function CommandCenter({ feed, onNavigate, onOpenWeeklyReview }) {
               )
             })}
           </div>
+
+          {(hidden > 0 || showAll) && (
+            <button onClick={() => { haptic('tap'); setShowAll(v => !v) }}
+              className="w-full flex items-center justify-center gap-1.5 mt-2 py-2.5 rounded-2xl text-xs font-bold active:scale-[0.99] transition-transform"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(240,244,255,0.45)' }}>
+              {showAll
+                ? <><ChevronUp size={13} /> Show less</>
+                : <><ChevronDown size={13} /> {hidden} more, less urgent</>}
+            </button>
+          )}
         </div>
       )}
 
@@ -357,12 +463,13 @@ function CommandCenter({ feed, onNavigate, onOpenWeeklyReview }) {
 // ─── Screen ───────────────────────────────────────────────────────
 
 export default function HomeScreen({
-  levelInfo, streaks, todayEntry, todayXP, logStreak, onNavigate, profile, onSave, entries,
+  levelInfo, streaks, todayEntry, logStreak, onNavigate, profile, onSave, entries,
   backlog, utilityItems, errandRuns, goals, people,
   onUpdateBacklogStatus, onDeleteBacklog, onSetBacklogReminder, onSetUtilityItemReminder,
   onToggleUtilityItem, onDeleteUtilityItem, onAddExperience, onUpdateProfile,
+  onOpenSearch, onOpenAgenda,
 }) {
-  const greeting = useMemo(() => getWiseGreeting(profile?.name), [profile])
+  const greeting = useMemo(() => getGreeting(profile?.name), [profile])
   const scores = calcScores(todayEntry)
   const activeStreaks = streaks.filter(s => s.current > 0).slice(0, 5)
   const insights = useMemo(() => getSmartInsights(entries || [], streaks), [entries, streaks])
@@ -373,37 +480,69 @@ export default function HomeScreen({
     }),
     [backlog, utilityItems, errandRuns, goals, people, profile]
   )
+  const agenda = useMemo(
+    () => agendaCounts(buildAgenda({ backlog, utilityItems, goals, people })),
+    [backlog, utilityItems, goals, people]
+  )
   const [showWeeklyReview, setShowWeeklyReview] = useState(false)
+  const [showDeepDive, setShowDeepDive] = useState(false)
 
   return (
     <div className="screen space-y-4 animate-fade-in">
 
-      {/* ── Command Center ───────────────────────────────────────── */}
-      <CommandCenter feed={feed} onNavigate={onNavigate} onOpenWeeklyReview={() => setShowWeeklyReview(true)} />
-
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
-        <div className="flex-1 pr-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
           <p className="text-[11px] font-medium mb-0.5" style={{ color: 'rgba(240,244,255,0.30)' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
-          <h1 className="text-[22px] font-black text-white leading-tight">{greeting}</h1>
+          <h1 className="text-[21px] font-black text-white leading-tight">{greeting.hello}</h1>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 mt-1">
-          {todayXP > 0 && (
-            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl"
-              style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.22)' }}>
-              <Zap size={11} style={{ color: '#f59e0b' }} />
-              <span className="text-xs font-black text-gold">+{todayXP}</span>
-            </div>
-          )}
+        {/* XP lives on the Quick Log strip and the rank card — the header only
+            carries the three things you might need from any screen. */}
+        <div className="flex items-center gap-1.5 flex-shrink-0 mt-1">
+          <button onClick={() => { haptic('tap'); onOpenSearch() }}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+            aria-label="Search everything">
+            <Search size={16} style={{ color: 'rgba(240,244,255,0.5)' }} />
+          </button>
+          <button onClick={() => { haptic('tap'); onOpenAgenda() }}
+            className="relative w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+            aria-label="What's coming">
+            <CalendarDays size={16} style={{ color: 'rgba(240,244,255,0.5)' }} />
+            {(agenda.overdue > 0 || agenda.today > 0) && (
+              <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full flex items-center justify-center text-[9px] font-black"
+                style={{
+                  background: agenda.overdue > 0 ? '#f43f5e' : '#7c3aed',
+                  color: '#fff',
+                  border: '1.5px solid #090b1a',
+                }}>
+                {agenda.overdue > 0 ? agenda.overdue : agenda.today}
+              </span>
+            )}
+          </button>
           <button onClick={() => onNavigate('settings')}
             className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+            aria-label="Settings">
             <Settings size={16} style={{ color: 'rgba(240,244,255,0.5)' }} />
           </button>
         </div>
       </div>
+
+      {/* ── The one thing that decides the day ──────────────────── */}
+      <BigRock todayEntry={todayEntry} onSave={onSave} wisdom={greeting.line} />
+
+      {/* ── Command Center ───────────────────────────────────────── */}
+      <CommandCenter feed={feed} onNavigate={onNavigate} onOpenWeeklyReview={() => setShowWeeklyReview(true)} />
+
+      {/* ── 20-second log (streak saver) ─────────────────────────── */}
+      <QuickLogStrip todayEntry={todayEntry} onSave={onSave} onOpenFullLog={() => onNavigate('daily')} />
+
+      {/* ── Daily Challenge ──────────────────────────────────────── */}
+      <DailyChallenge todayEntry={todayEntry} onSave={onSave} />
 
       {/* ── Level / XP ──────────────────────────────────────────── */}
       <button className="card-elevated glow-accent w-full text-left active:scale-[0.99] transition-transform"
@@ -427,7 +566,7 @@ export default function HomeScreen({
         </div>
         <div className="flex justify-between text-[11px]" style={{ color: 'rgba(240,244,255,0.38)' }}>
           <span>{Math.round(levelInfo.progress * 100)}% → Level {levelInfo.level + 1}</span>
-          {todayXP > 0 && <span className="text-gold font-semibold">+{todayXP} XP today</span>}
+          {logStreak > 0 && <span className="text-emerald font-semibold">{logStreak}-day log streak</span>}
         </div>
         {activeStreaks.length > 0 && (
           <div className="flex gap-4 mt-3.5 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
@@ -459,46 +598,52 @@ export default function HomeScreen({
         </div>
       )}
 
-      {/* ── Daily Challenge ──────────────────────────────────────── */}
-      <DailyChallenge todayEntry={todayEntry} onSave={onSave} />
+      {/* ── Deep dive: the analytics that don't need to be on top ── */}
+      <button onClick={() => { haptic('tap'); setShowDeepDive(v => !v) }}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold active:scale-[0.99] transition-transform"
+        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(240,244,255,0.5)' }}>
+        {showDeepDive ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        {showDeepDive ? 'Hide' : 'Show'} today's numbers, life scores & month
+      </button>
 
-      {/* ── Time Pulse ───────────────────────────────────────────── */}
-      <TimePulse />
-
-      {/* ── Today's Metrics ──────────────────────────────────────── */}
-      <div>
-        <p className="section-title">Today's Metrics</p>
-        {todayEntry ? (
-          <div className="grid grid-cols-3 gap-2">
-            <StatPill emoji="🔥" label="Deep Work" value={todayEntry.deep_work_hours ? `${todayEntry.deep_work_hours}h`      : null} color="text-orange-400" />
-            <StatPill emoji="😴" label="Sleep"     value={todayEntry.sleep_hours      ? `${todayEntry.sleep_hours}h`          : null} color="text-sky" />
-            <StatPill emoji="⚡" label="Energy"    value={todayEntry.energy_score     ? `${todayEntry.energy_score}/10`       : null} color="text-emerald" />
-            <StatPill emoji="📚" label="Learning"  value={todayEntry.learning_minutes ? `${todayEntry.learning_minutes}m`     : null} color="text-accent-light" />
-            <StatPill emoji="💧" label="Water"     value={todayEntry.water_liters     ? `${todayEntry.water_liters}L`         : null} color="text-sky" />
-            <StatPill emoji="❤️" label="Family"    value={todayEntry.family_time      ? `${todayEntry.family_time}m`          : null} color="text-pink-400" />
+      {showDeepDive && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Today's Metrics */}
+          <div>
+            <p className="section-title">Today's Metrics</p>
+            {todayEntry ? (
+              <div className="grid grid-cols-3 gap-2">
+                <StatPill emoji="🔥" label="Deep Work" value={todayEntry.deep_work_hours ? `${todayEntry.deep_work_hours}h`      : null} color="text-orange-400" />
+                <StatPill emoji="😴" label="Sleep"     value={todayEntry.sleep_hours      ? `${todayEntry.sleep_hours}h`          : null} color="text-sky" />
+                <StatPill emoji="⚡" label="Energy"    value={todayEntry.energy_score     ? `${todayEntry.energy_score}/10`       : null} color="text-emerald" />
+                <StatPill emoji="📚" label="Learning"  value={todayEntry.learning_minutes ? `${todayEntry.learning_minutes}m`     : null} color="text-accent-light" />
+                <StatPill emoji="💧" label="Water"     value={todayEntry.water_liters     ? `${todayEntry.water_liters}L`         : null} color="text-sky" />
+                <StatPill emoji="❤️" label="Family"    value={todayEntry.family_time      ? `${todayEntry.family_time}m`          : null} color="text-pink-400" />
+              </div>
+            ) : (
+              <div className="card text-center py-7" style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <p className="text-3xl mb-3">📋</p>
+                <p className="text-sm font-bold text-white mb-1">Nothing logged today</p>
+                <p className="text-xs text-gray-500 mb-4">Tap a habit above, or open the full log</p>
+                <button onClick={() => onNavigate('daily')} className="btn-primary inline-flex items-center gap-2 mx-auto">
+                  <Plus size={15} /> Log Today
+                </button>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="card text-center py-7" style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
-            <p className="text-3xl mb-3">📋</p>
-            <p className="text-sm font-bold text-white mb-1">Nothing logged today</p>
-            <p className="text-xs text-gray-500 mb-4">Track your day to see your life scores</p>
-            <button onClick={() => onNavigate('daily')} className="btn-primary inline-flex items-center gap-2 mx-auto">
-              <Plus size={15} /> Log Today
-            </button>
-          </div>
-        )}
-      </div>
 
-      {/* ── Life Direction Scores ────────────────────────────────── */}
-      <DirectionScores scores={scores} todayEntry={todayEntry} />
-
-      {/* ── Month Tracker ────────────────────────────────────────── */}
-      <MonthTracker entries={entries || []} />
+          <DirectionScores scores={scores} todayEntry={todayEntry} />
+          <MonthTracker entries={entries || []} />
+          <TimePulse />
+        </div>
+      )}
 
       {showWeeklyReview && (
         <WeeklyReviewScreen
           backlog={backlog || []}
           utilityItems={utilityItems || []}
+          entries={entries || []}
+          goals={goals || []}
           onUpdateBacklogStatus={onUpdateBacklogStatus}
           onDeleteBacklog={onDeleteBacklog}
           onSetBacklogReminder={onSetBacklogReminder}
