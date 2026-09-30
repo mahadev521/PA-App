@@ -54,6 +54,28 @@ function AppShell() {
     )
   }
 
+  // Local storage is the whole app — if it won't open, say so plainly instead of
+  // spinning forever. The common cause is an older cached build opening a
+  // database a newer build already upgraded, which a reload fixes.
+  if (app.loadError) {
+    return (
+      <div className="flex-1 bg-base flex flex-col items-center justify-center gap-4 px-8 text-center">
+        <div className="text-4xl">🔒</div>
+        <div>
+          <p className="text-base font-bold text-white mb-1.5">Can't open your local data</p>
+          <p className="text-xs leading-relaxed" style={{ color: 'rgba(240,244,255,0.5)' }}>
+            Your data is still on this device — the app just couldn't read it. This usually means
+            another tab has Jarvis open, or the app was updated. Close other tabs and reload.
+          </p>
+          <p className="text-[10px] mt-3 font-mono" style={{ color: 'rgba(240,244,255,0.28)' }}>
+            {app.loadError?.name || 'Error'}: {app.loadError?.message || 'unknown'}
+          </p>
+        </div>
+        <button onClick={() => window.location.reload()} className="btn-primary">Reload</button>
+      </div>
+    )
+  }
+
   // Show onboarding on first launch (name is default 'You')
   if (!app.loading && (!app.profile?.name || app.profile.name === 'You')) {
     return (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Check, Settings, ChevronRight, PartyPopper, Search, CalendarDays, ChevronDown, ChevronUp } from 'lucide-react'
 import { todayStr } from '../../utils/gamification'
 import { getDailyChallenge, getTimePulse, getGreeting } from '../../utils/challenges'
@@ -316,15 +316,35 @@ function BigRock({ todayEntry, onSave, wisdom }) {
   const [value, setValue] = useState(saved)
   const [editing, setEditing] = useState(false)
   const done = !!todayEntry?.big_rock_done
+  const saveTimer = useRef(null)
+  const pending = useRef(saved)
 
   // Keep in sync when the entry loads or changes elsewhere, but never stomp
   // on what the user is actively typing.
   useEffect(() => { if (!editing) setValue(saved) }, [saved, editing])
 
+  // Don't leave a queued save behind if Home unmounts mid-edit.
+  useEffect(() => () => clearTimeout(saveTimer.current), [])
+
+  function persist(text) {
+    return onSave({ ...(todayEntry || {}), date: todayStr(), big_rock: text.trim() })
+  }
+
+  // Autosave while typing, same as the daily log does. Relying on blur alone
+  // meant closing or backgrounding the app mid-sentence silently dropped the
+  // most important field on the screen.
+  function handleChange(next) {
+    setValue(next)
+    pending.current = next
+    clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => persist(pending.current), 700)
+  }
+
   async function commit() {
+    clearTimeout(saveTimer.current)
     setEditing(false)
     if (value.trim() === saved.trim()) return
-    await onSave({ ...(todayEntry || {}), date: todayStr(), big_rock: value.trim() })
+    await persist(value)
   }
 
   async function toggleDone() {
@@ -355,7 +375,7 @@ function BigRock({ todayEntry, onSave, wisdom }) {
         <input
           autoFocus
           value={value}
-          onChange={e => setValue(e.target.value)}
+          onChange={e => handleChange(e.target.value)}
           onBlur={commit}
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
           placeholder="The hardest, most impactful thing today…"

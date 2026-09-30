@@ -27,28 +27,40 @@ export function useApp() {
   const [loading, setLoading] = useState(true)
   const [todayEntry, setTodayEntry] = useState(null)
   const [notificationPermission, setNotificationPermission] = useState(getPermission())
+  const [loadError, setLoadError] = useState(null)
 
   const reload = useCallback(async () => {
-    const [all, prof, exps, tsks, gts, bl, er, ui, cls, inv, gls, ppl] = await Promise.all([
-      getAllEntries(), getProfile(), getAllExperiences(), getAllTasks(),
-      getAllGoTasks(), getAllBacklog(), getAllErrandRuns(), getAllUtilityItems(),
-      getAllChecklists(), getAllInvestments(), getAllGoals(), getAllPeople(),
-    ])
-    setEntries(all)
-    setProfile(prof)
-    setExperiences(exps)
-    setTasks(tsks)
-    setGoTasks(gts)
-    setBacklog(bl)
-    setErrandRuns(er)
-    setUtilityItems(ui)
-    setChecklists(cls)
-    setInvestments(inv)
-    setGoals(gls)
-    setPeople(ppl)
-    const today = all.find(e => e.date === todayStr()) || null
-    setTodayEntry(today)
-    setLoading(false)
+    try {
+      const [all, prof, exps, tsks, gts, bl, er, ui, cls, inv, gls, ppl] = await Promise.all([
+        getAllEntries(), getProfile(), getAllExperiences(), getAllTasks(),
+        getAllGoTasks(), getAllBacklog(), getAllErrandRuns(), getAllUtilityItems(),
+        getAllChecklists(), getAllInvestments(), getAllGoals(), getAllPeople(),
+      ])
+      setEntries(all)
+      setProfile(prof)
+      setExperiences(exps)
+      setTasks(tsks)
+      setGoTasks(gts)
+      setBacklog(bl)
+      setErrandRuns(er)
+      setUtilityItems(ui)
+      setChecklists(cls)
+      setInvestments(inv)
+      setGoals(gls)
+      setPeople(ppl)
+      const today = all.find(e => e.date === todayStr()) || null
+      setTodayEntry(today)
+      setLoadError(null)
+    } catch (err) {
+      // Without this the app sat on "Loading Jarvis…" forever with no
+      // explanation. The realistic trigger is a version mismatch — an older
+      // cached build opening a database a newer build already upgraded — or
+      // IndexedDB being unavailable (private mode, blocked storage).
+      console.error('[useApp] Failed to load local database', err)
+      setLoadError(err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { reload() }, [reload])
@@ -364,7 +376,7 @@ export function useApp() {
   const logStreak = streaks.find(s => s.key === 'logging')?.current || 0
 
   return {
-    entries, experiences, tasks, goTasks, backlog, errandRuns, utilityItems, checklists, investments, goals, people, profile, loading, todayEntry,
+    entries, experiences, tasks, goTasks, backlog, errandRuns, utilityItems, checklists, investments, goals, people, profile, loading, loadError, todayEntry,
     totalXP, levelInfo, streaks, earnedBadges, todayXP, logStreak,
     notificationPermission, requestNotificationPermission,
     logEntry, updateProfile, addExperience, removeExperience,
