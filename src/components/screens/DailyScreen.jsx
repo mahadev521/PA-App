@@ -10,8 +10,8 @@ const TABS = [
   { id: 'journal', icon: BookOpen, label: 'Journal', gradient: 'linear-gradient(135deg,#e11d48,#be123c)' },
 ]
 
-export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onToggleTask, onDeleteTask, experiences, onAddExperience, onDeleteExperience }) {
-  const [mode, setMode] = useState('log')
+export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onToggleTask, onDeleteTask, experiences, onAddExperience, onDeleteExperience, initialMode, initialDate }) {
+  const [mode, setMode] = useState(TABS.some(t => t.id === initialMode) ? initialMode : 'log')
 
   return (
     <div className="bg-base flex flex-col">
@@ -50,6 +50,7 @@ export default function DailyScreen({ todayEntry, onSave, tasks, onAddTask, onTo
 
       {mode === 'log' && (
         <LogScreen
+          initialDate={initialDate}
           todayEntry={todayEntry}
           onSave={onSave}
           tasks={tasks}

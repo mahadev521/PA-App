@@ -32,8 +32,37 @@ const EXPORTABLE_STORES = {
   people: PEOPLE_STORE,
 }
 
-async function getDB() {
-  return openDB(DB_NAME, DB_VERSION, {
+// One connection per page, reused by every read and write.
+//
+// This used to call openDB() on every single operation and never close anything,
+// so a page accumulated dozens of live connections. Those connections hold the
+// database open, which means the next release that bumps DB_VERSION to add a
+// store would find its upgrade blocked — and because nothing handled `blocked`,
+// the open never settled and the app hung on the loading screen forever.
+let dbPromise = null
+
+function getDB() {
+  if (dbPromise) return dbPromise
+
+  dbPromise = openDB(DB_NAME, DB_VERSION, {
+    // Another tab (or a newly deployed version) wants to upgrade the schema.
+    // Let go of our connection so its upgrade can run instead of both sides
+    // waiting on each other.
+    blocking() {
+      const current = dbPromise
+      dbPromise = null
+      current?.then(db => db.close()).catch(() => {})
+    },
+    // Our own open is blocked by a connection we don't control (another tab on
+    // the old version). Surface it rather than hanging silently.
+    blocked() {
+      console.warn('[storage] Database upgrade is blocked by another open tab. Close other tabs and reload.')
+    },
+    // Connection died (tab discarded, storage evicted) — drop the cache so the
+    // next call reconnects instead of reusing a dead handle.
+    terminated() {
+      dbPromise = null
+    },
     upgrade(db) {
       if (!db.objectStoreNames.contains(STORE)) {
         const store = db.createObjectStore(STORE, { keyPath: 'date' })
@@ -77,7 +106,13 @@ async function getDB() {
         db.createObjectStore(PEOPLE_STORE, { keyPath: 'id' })
       }
     },
+  }).catch(err => {
+    // Never cache a rejected promise, or the app is permanently broken until reload.
+    dbPromise = null
+    throw err
   })
+
+  return dbPromise
 }
 
 export async function saveEntry(entry) {
@@ -148,6 +183,9 @@ export async function exportData(passphrase) {
   a.download = `jarvis-backup-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
+
+  // Stamped so the app can tell you how exposed you are (see commandCenter).
+  await saveProfile({ last_backup_at: Date.now() })
 }
 
 export async function importData(jsonString, passphrase) {

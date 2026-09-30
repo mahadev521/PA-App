@@ -8,8 +8,10 @@ import {
   todayStr,
 } from '../utils/gamification'
 import { getPermission, requestPermission, fireDueReminders } from '../utils/notifications'
+import { useToast } from './useToast'
 
 export function useApp() {
+  const { toast } = useToast()
   const [entries, setEntries] = useState([])
   const [experiences, setExperiences] = useState([])
   const [tasks, setTasks] = useState([])
@@ -80,6 +82,21 @@ export function useApp() {
     return () => clearInterval(interval)
   }, [backlog, utilityItems])
 
+  // Deletes are everywhere in this app and a mis-tap used to be permanent.
+  // Every remove* below goes through here instead: delete immediately (no
+  // confirm dialog to slow you down) but keep the record in the toast so it
+  // can be put back for a few seconds.
+  const deleteWithUndo = useCallback(async ({ item, label, remove, restore, refresh }) => {
+    await remove()
+    await refresh()
+    if (!item) return
+    const name = (label || '').length > 34 ? `${label.slice(0, 34)}…` : label
+    toast(name ? `Deleted "${name}"` : 'Deleted', {
+      variant: 'warn',
+      undo: async () => { await restore(item); await refresh() },
+    })
+  }, [toast])
+
   const requestNotificationPermission = useCallback(async () => {
     const perm = await requestPermission()
     setNotificationPermission(perm)
@@ -113,9 +130,14 @@ export function useApp() {
   }, [])
 
   const removeTask = useCallback(async (id) => {
-    await deleteTask(id)
-    setTasks(await getAllTasks())
-  }, [])
+    const item = (await getAllTasks()).find(t => t.id === id)
+    await deleteWithUndo({
+      item, label: item?.title,
+      remove: () => deleteTask(id),
+      restore: t => saveTask(t),
+      refresh: async () => setTasks(await getAllTasks()),
+    })
+  }, [deleteWithUndo])
 
   const addExperience = useCallback(async (exp) => {
     await saveExperience(exp)
@@ -123,9 +145,14 @@ export function useApp() {
   }, [reload])
 
   const removeExperience = useCallback(async (id) => {
-    await deleteExperience(id)
-    await reload()
-  }, [reload])
+    const item = (await getAllExperiences()).find(e => e.id === id)
+    await deleteWithUndo({
+      item, label: item?.title,
+      remove: () => deleteExperience(id),
+      restore: e => saveExperience(e),
+      refresh: reload,
+    })
+  }, [deleteWithUndo, reload])
 
   const addGoTask = useCallback(async (title, priority) => {
     const now = Date.now()
@@ -180,9 +207,14 @@ export function useApp() {
   }, [])
 
   const removeBacklogItem = useCallback(async (id) => {
-    await deleteBacklogItem(id)
-    setBacklog(await getAllBacklog())
-  }, [])
+    const item = (await getAllBacklog()).find(i => i.id === id)
+    await deleteWithUndo({
+      item, label: item?.title,
+      remove: () => deleteBacklogItem(id),
+      restore: i => saveBacklogItem(i),
+      refresh: async () => setBacklog(await getAllBacklog()),
+    })
+  }, [deleteWithUndo])
 
   const updateBacklogStatus = useCallback(async (id, status) => {
     const all = await getAllBacklog()
@@ -206,9 +238,14 @@ export function useApp() {
   }, [])
 
   const removeErrandRun = useCallback(async (id) => {
-    await deleteErrandRun(id)
-    setErrandRuns(await getAllErrandRuns())
-  }, [])
+    const item = (await getAllErrandRuns()).find(r => r.id === id)
+    await deleteWithUndo({
+      item, label: item?.name,
+      remove: () => deleteErrandRun(id),
+      restore: r => saveErrandRun(r),
+      refresh: async () => setErrandRuns(await getAllErrandRuns()),
+    })
+  }, [deleteWithUndo])
 
   const addUtilityItem = useCallback(async (type, title, category, meta = {}) => {
     await saveUtilityItem({ type, title, category, meta, done: false })
@@ -223,10 +260,22 @@ export function useApp() {
     setUtilityItems(await getAllUtilityItems())
   }, [])
 
-  const removeUtilityItem = useCallback(async (id) => {
-    await deleteUtilityItem(id)
+  // Full-record update for utility items — the Decision Journal needs to write
+  // outcome/verdict into meta, which toggle and reminder helpers can't express.
+  const upsertUtilityItem = useCallback(async (item) => {
+    await saveUtilityItem(item)
     setUtilityItems(await getAllUtilityItems())
   }, [])
+
+  const removeUtilityItem = useCallback(async (id) => {
+    const item = (await getAllUtilityItems()).find(i => i.id === id)
+    await deleteWithUndo({
+      item, label: item?.title,
+      remove: () => deleteUtilityItem(id),
+      restore: i => saveUtilityItem(i),
+      refresh: async () => setUtilityItems(await getAllUtilityItems()),
+    })
+  }, [deleteWithUndo])
 
   const setUtilityItemReminder = useCallback(async (id, remind_at) => {
     const all = await getAllUtilityItems()
@@ -242,9 +291,14 @@ export function useApp() {
   }, [])
 
   const removeChecklist = useCallback(async (id) => {
-    await deleteChecklist(id)
-    setChecklists(await getAllChecklists())
-  }, [])
+    const item = (await getAllChecklists()).find(c => c.id === id)
+    await deleteWithUndo({
+      item, label: item?.name || item?.title,
+      remove: () => deleteChecklist(id),
+      restore: c => saveChecklist(c),
+      refresh: async () => setChecklists(await getAllChecklists()),
+    })
+  }, [deleteWithUndo])
 
   const upsertInvestment = useCallback(async (investment) => {
     await saveInvestment(investment)
@@ -252,9 +306,14 @@ export function useApp() {
   }, [])
 
   const removeInvestment = useCallback(async (id) => {
-    await deleteInvestment(id)
-    setInvestments(await getAllInvestments())
-  }, [])
+    const item = (await getAllInvestments()).find(i => i.id === id)
+    await deleteWithUndo({
+      item, label: item?.name || item?.title,
+      remove: () => deleteInvestment(id),
+      restore: i => saveInvestment(i),
+      refresh: async () => setInvestments(await getAllInvestments()),
+    })
+  }, [deleteWithUndo])
 
   const upsertGoal = useCallback(async (goal) => {
     await saveGoal(goal)
@@ -262,9 +321,14 @@ export function useApp() {
   }, [])
 
   const removeGoal = useCallback(async (id) => {
-    await deleteGoal(id)
-    setGoals(await getAllGoals())
-  }, [])
+    const item = (await getAllGoals()).find(g => g.id === id)
+    await deleteWithUndo({
+      item, label: item?.title,
+      remove: () => deleteGoal(id),
+      restore: g => saveGoal(g),
+      refresh: async () => setGoals(await getAllGoals()),
+    })
+  }, [deleteWithUndo])
 
   const toggleMilestone = useCallback(async (goalId, milestoneId) => {
     const all = await getAllGoals()
@@ -281,9 +345,14 @@ export function useApp() {
   }, [])
 
   const removePerson = useCallback(async (id) => {
-    await deletePerson(id)
-    setPeople(await getAllPeople())
-  }, [])
+    const item = (await getAllPeople()).find(p => p.id === id)
+    await deleteWithUndo({
+      item, label: item?.name,
+      remove: () => deletePerson(id),
+      restore: p => savePerson(p),
+      refresh: async () => setPeople(await getAllPeople()),
+    })
+  }, [deleteWithUndo])
 
   // Derived gamification data
   const totalXP = entries.reduce((s, e) => s + calculateDayXP(e), 0)
@@ -303,7 +372,7 @@ export function useApp() {
     addGoTask, toggleGoTask, removeGoTask, updateGoTaskComment, reorderGoTask,
     addBacklogItem, toggleBacklogItem, removeBacklogItem, updateBacklogStatus, setBacklogReminder,
     upsertErrandRun, removeErrandRun,
-    addUtilityItem, toggleUtilityItem, removeUtilityItem, setUtilityItemReminder,
+    addUtilityItem, toggleUtilityItem, removeUtilityItem, setUtilityItemReminder, upsertUtilityItem,
     upsertChecklist, removeChecklist,
     upsertInvestment, removeInvestment,
     upsertGoal, removeGoal, toggleMilestone,
